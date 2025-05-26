@@ -93,6 +93,7 @@
             <!-- Vorschau und Download-Button -->
             <div class="flex flex-col md:flex-row md:items-center gap-4">
                 <div id="previewContent" class="mb-4 bg-gray-50 p-4 rounded flex-1"></div>
+                <button id="convertBtn" class="bg-blue-500 text-white px-4 py-2 rounded" style="display:none;">Dienstplan konvertieren</button>
                 <button id="downloadBtn" class="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" style="display:none;">Dienstplan herunterladen</button>
             </div>
         </section>
@@ -130,7 +131,11 @@
         </div>
     </template>
 
-    <!-- WICHTIG: app.js NACH ALLEN DOM-ELEMENTEN einbinden -->
-    <script src="app.js"></script>
+    <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
+    <script type="module" src="shiftTypes.js"></script>
+    <script type="module" src="upload.js"></script>
+    <script type="module" src="convert.js"></script>
+    <script type="module" src="preview.js"></script>
+    <script type="module" src="main.js"></script>
 </body>
 </html>
