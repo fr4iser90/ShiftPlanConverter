@@ -270,6 +270,120 @@ function updateCurrentShiftTypes() {
     }
 }
 
+/**
+ * PDF-Upload, Vorschau und Download-Logik
+ */
+const dropzone = document.getElementById('dropzone');
+const pdfInput = document.getElementById('pdfInput');
+const previewContent = document.getElementById('previewContent');
+const downloadBtn = document.getElementById('downloadBtn');
+let fileData = null;
+let convertedData = null; // Platzhalter für konvertierte Datei
+
+dropzone.addEventListener('click', () => pdfInput.click());
+pdfInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) {
+        fileData = e.target.files[0];
+        handlePreview();
+    }
+});
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); });
+dropzone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) {
+        fileData = e.dataTransfer.files[0];
+        handlePreview();
+    }
+});
+
+function handlePreview() {
+    if (fileData) {
+        console.log("handlePreview: fileData vorhanden", fileData);
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            localStorage.setItem('dienstplanPDF', evt.target.result);
+
+            // PDF Vorschau mit pdf.js
+            const arrayBufferReader = new FileReader();
+            arrayBufferReader.onload = function(e) {
+                const typedarray = new Uint8Array(e.target.result);
+                pdfjsLib.getDocument({ data: typedarray }).promise.then(function(pdf) {
+                    pdf.getPage(1).then(function(page) {
+                        const scale = 1.2;
+                        const viewport = page.getViewport({ scale: scale });
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        page.render({ canvasContext: context, viewport: viewport }).promise.then(function() {
+                            previewContent.innerHTML = '';
+                            previewContent.appendChild(canvas);
+                            console.log("PDF Vorschau erfolgreich angezeigt");
+                        });
+                    });
+                }).catch(function(error) {
+                    previewContent.innerText = 'Fehler beim Laden der PDF-Vorschau: ' + error;
+                    console.error("Fehler bei PDF.js:", error);
+                });
+            };
+            arrayBufferReader.readAsArrayBuffer(fileData);
+
+            // Dummy-Konvertierung (z.B. als CSV)
+            convertedData = convertToCSV();
+            downloadBtn.style.display = "inline-block";
+        };
+        reader.readAsDataURL(fileData);
+    } else {
+        console.warn("handlePreview: fileData ist leer!");
+    }
+}
+
+downloadBtn.addEventListener('click', () => {
+    console.log("Download-Button geklickt, convertedData:", convertedData);
+    if (convertedData) {
+        const blob = new Blob([convertedData], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "dienstplan.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    } else {
+        console.warn("Download-Button: Keine konvertierten Daten vorhanden!");
+    }
+});
+
+downloadBtn.addEventListener('click', () => {
+    if (convertedData) {
+        const blob = new Blob([convertedData], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "dienstplan.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+});
+
+/**
+ * Konvertiert die aktuelle Schichttypen-Liste in CSV
+ */
+function convertToCSV() {
+    let csv = "Code,Start,Ende\n";
+    Object.entries(currentShiftTypes).forEach(([timeRange, code]) => {
+        const [start, end] = timeRange.split('-');
+        csv += `${code},${start},${end}\n`;
+    });
+    return csv;
+}
+
 // Event Listener für "Neue Schicht" Button
 addShiftTypeButton.addEventListener('click', addNewShiftType);
 
