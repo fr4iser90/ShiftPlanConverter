@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dienstplan Konverter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-4">Dienstplan Konverter</h1>
+                <p class="text-gray-600 mb-6">
+                    Konvertiere deinen Dienstplan-PDF direkt im Browser und synchronisiere ihn mit deinem Google Kalender.
+                </p>
+
+                <div class="space-y-6">
+                    <!-- File Upload Section -->
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <input type="file" id="pdfInput" accept=".pdf" class="hidden">
+                        <label for="pdfInput" class="cursor-pointer">
+                            <div class="space-y-2">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <div class="text-gray-600">
+                                    <span class="font-medium">PDF-Datei auswählen</span> oder hierher ziehen
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div id="previewSection" class="hidden">
+                        <h2 class="text-xl font-semibold mb-4">Vorschau</h2>
+                        <div id="previewContent" class="bg-gray-50 p-4 rounded-lg"></div>
+                    </div>
+
+                    <!-- Google Calendar Integration -->
+                    <div id="calendarSection" class="hidden">
+                        <h2 class="text-xl font-semibold mb-4">Google Kalender Integration</h2>
+                        <button id="authorizeButton" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                            Mit Google Kalender verbinden
+                        </button>
+                        <button id="syncButton" class="hidden bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-4">
+                            Mit Kalender synchronisieren
+                        </button>
+                    </div>
+
+                    <!-- Status Messages -->
+                    <div id="statusMessages" class="space-y-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html> 
