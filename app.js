@@ -15,17 +15,163 @@ const calendarSection = document.getElementById('calendarSection');
 const authorizeButton = document.getElementById('authorizeButton');
 const syncButton = document.getElementById('syncButton');
 const statusMessages = document.getElementById('statusMessages');
+const professionSelect = document.getElementById('professionSelect');
+const presetSelect = document.getElementById('presetSelect');
+const shiftTypesList = document.getElementById('shiftTypesList');
+const addShiftTypeButton = document.getElementById('addShiftType');
+const shiftTypeTemplate = document.getElementById('shiftTypeTemplate');
 
-// Shift codes mapping
-const shiftCodes = {
-    '07:35-15:50': 'F',
-    '08:30-16:45': 'F1',
-    '09:00-17:15': 'F2',
-    '09:30-17:45': 'F3',
-    '10:00-18:15': 'M1',
-    '11:00-19:15': 'M2',
-    '11:35-19:50': 'M3'
+// Vordefinierte Schichttypen für verschiedene Berufsgruppen
+const shiftPresets = {
+    default: {
+        '07:35-15:50': 'F',
+        '08:30-16:45': 'F1',
+        '09:00-17:15': 'F2',
+        '09:30-17:45': 'F3',
+        '10:00-18:15': 'M1',
+        '11:00-19:15': 'M2',
+        '11:35-19:50': 'M3',
+        '07:35-19:35': 'B36',
+        '19:50-07:35': 'B38',
+        '11:35-07:35': 'MO'
+    },
+    anasthesie: {
+        '07:00-15:30': 'F',
+        '07:30-16:00': 'F1',
+        '08:00-16:30': 'F2',
+        '08:30-17:00': 'F3',
+        '09:00-17:30': 'M1',
+        '10:00-18:30': 'M2',
+        '11:00-19:30': 'M3',
+        '07:00-19:00': 'B36',
+        '19:00-07:00': 'B38',
+        '11:00-07:00': 'MO',
+        '08:00-20:00': 'NEF',
+        '20:00-08:00': 'NEF-N'
+    },
+    chirurgie: {
+        '07:00-15:30': 'F',
+        '07:30-16:00': 'F1',
+        '08:00-16:30': 'F2',
+        '08:30-17:00': 'F3',
+        '09:00-17:30': 'M1',
+        '10:00-18:30': 'M2',
+        '11:00-19:30': 'M3',
+        '07:00-19:00': 'B36',
+        '19:00-07:00': 'B38',
+        '11:00-07:00': 'MO',
+        '08:00-20:00': 'OP',
+        '20:00-08:00': 'OP-N'
+    },
+    ota: {
+        '07:00-15:30': 'F',
+        '07:30-16:00': 'F1',
+        '08:00-16:30': 'F2',
+        '08:30-17:00': 'F3',
+        '09:00-17:30': 'M1',
+        '10:00-18:30': 'M2',
+        '11:00-19:30': 'M3',
+        '07:00-19:00': 'B36',
+        '19:00-07:00': 'B38',
+        '11:00-07:00': 'MO',
+        '08:00-20:00': 'OP',
+        '20:00-08:00': 'OP-N'
+    }
 };
+
+// Aktuelle Schichttypen
+let currentShiftTypes = { ...shiftPresets.default };
+
+// Funktion zum Aktualisieren der Schichttypen-Liste
+function updateShiftTypesList() {
+    shiftTypesList.innerHTML = '';
+    
+    Object.entries(currentShiftTypes).forEach(([timeRange, code]) => {
+        const [start, end] = timeRange.split('-');
+        const entry = shiftTypeTemplate.content.cloneNode(true);
+        
+        const codeInput = entry.querySelector('.shift-code');
+        const startInput = entry.querySelector('.shift-start');
+        const endInput = entry.querySelector('.shift-end');
+        const deleteButton = entry.querySelector('.delete-shift');
+        
+        codeInput.value = code;
+        startInput.value = start;
+        endInput.value = end;
+        
+        // Event Listener für Änderungen
+        codeInput.addEventListener('change', () => updateShiftType(timeRange, codeInput.value, start, end));
+        startInput.addEventListener('change', () => updateShiftType(timeRange, code, startInput.value, endInput.value));
+        endInput.addEventListener('change', () => updateShiftType(timeRange, code, startInput.value, endInput.value));
+        deleteButton.addEventListener('click', () => deleteShiftType(timeRange));
+        
+        shiftTypesList.appendChild(entry);
+    });
+}
+
+// Funktion zum Aktualisieren eines Schichttyps
+function updateShiftType(oldTimeRange, code, start, end) {
+    const newTimeRange = `${start}-${end}`;
+    delete currentShiftTypes[oldTimeRange];
+    currentShiftTypes[newTimeRange] = code;
+    updateShiftTypesList();
+}
+
+// Funktion zum Löschen eines Schichttyps
+function deleteShiftType(timeRange) {
+    delete currentShiftTypes[timeRange];
+    updateShiftTypesList();
+}
+
+// Funktion zum Hinzufügen eines neuen Schichttyps
+function addNewShiftType() {
+    const entry = shiftTypeTemplate.content.cloneNode(true);
+    const codeInput = entry.querySelector('.shift-code');
+    const startInput = entry.querySelector('.shift-start');
+    const endInput = entry.querySelector('.shift-end');
+    const deleteButton = entry.querySelector('.delete-shift');
+    
+    // Event Listener für Änderungen
+    const updateHandler = () => {
+        if (codeInput.value && startInput.value && endInput.value) {
+            const timeRange = `${startInput.value}-${endInput.value}`;
+            currentShiftTypes[timeRange] = codeInput.value;
+            updateShiftTypesList();
+        }
+    };
+    
+    codeInput.addEventListener('change', updateHandler);
+    startInput.addEventListener('change', updateHandler);
+    endInput.addEventListener('change', updateHandler);
+    deleteButton.addEventListener('click', () => entry.remove());
+    
+    shiftTypesList.appendChild(entry);
+}
+
+// Event Listener für Berufsgruppen-Auswahl
+professionSelect.addEventListener('change', (event) => {
+    const profession = event.target.value;
+    if (profession === 'custom') {
+        presetSelect.value = 'default';
+        currentShiftTypes = {};
+    } else {
+        currentShiftTypes = { ...shiftPresets[profession] };
+        updateShiftTypesList();
+    }
+});
+
+// Event Listener für Voreinstellungen
+presetSelect.addEventListener('change', (event) => {
+    const preset = event.target.value;
+    currentShiftTypes = { ...shiftPresets[preset] };
+    updateShiftTypesList();
+});
+
+// Event Listener für "Neue Schicht" Button
+addShiftTypeButton.addEventListener('click', addNewShiftType);
+
+// Initialisiere die Schichttypen-Liste
+updateShiftTypesList();
 
 // Initialize Google Calendar API
 function initGoogleCalendarAPI() {
@@ -138,7 +284,7 @@ function parseTimeSheet(text) {
                 const [_, day, startTime, endTime] = shiftMatch;
                 const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
                 const timeKey = `${startTime}-${endTime}`;
-                const shiftType = shiftCodes[timeKey] || `⚠️ ${timeKey}`;
+                const shiftType = currentShiftTypes[timeKey] || `⚠️ ${timeKey}`;
                 mainEntries.push({ type: shiftType, date: date, start: startTime, end: endTime });
             } else if (vacationMatch && currentYear && currentMonth) {
                 const [_, day] = vacationMatch;
