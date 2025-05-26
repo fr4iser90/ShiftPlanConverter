@@ -8,6 +8,7 @@ import { initUpload } from './upload.js';
 
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
+import { initGoogleCalendar } from './googleCalendar.js';
 
 // Initialisierung Upload
 initUpload({
@@ -60,6 +61,28 @@ initUpload({
                 console.log('CSV:', csv);
                 // Vorschau aktualisieren
                 renderPreview(parsed.entries);
+
+                // Download-Button anzeigen und aktivieren
+                const downloadBtn = document.getElementById('downloadBtn');
+                if (downloadBtn) {
+                    downloadBtn.style.display = '';
+                    downloadBtn.disabled = false;
+                    // Remove previous click handlers
+                    downloadBtn.onclick = null;
+                    downloadBtn.onclick = function() {
+                        const blob = new Blob([csv], { type: 'text/csv' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'dienstplan.csv';
+                        document.body.appendChild(a);
+                        a.click();
+                        setTimeout(() => {
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        }, 0);
+                    };
+                }
             });
         });
     }
@@ -146,6 +169,7 @@ function renderShiftTypesList(currentShiftTypes) {
 window.addEventListener('DOMContentLoaded', () => {
     updatePresetOptions();
     renderShiftTypesList(updateCurrentShiftTypes());
+    initGoogleCalendar(); // Initialize Google Calendar integration
 
     // Event-Listener für Dropdowns
     const professionSelect = document.getElementById('professionSelect');

@@ -3,17 +3,35 @@ version: '3.8'
 services:
   web:
     image: nginx:alpine
-    ports:
-      - "8080:80"
+    container_name: shiftplan
     volumes:
       - ./:/usr/share/nginx/html
-    environment:
-      - NGINX_HOST=localhost
-      - NGINX_PORT=80
+    dns:
+      - 1.1.1.1
     restart: unless-stopped
     networks:
-      - app-network
+      proxy:
+    labels:
+      # Basis-Konfiguration
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+      
+      # Router Konfiguration
+      - "traefik.http.routers.shiftplan.entrypoints=websecure"
+      - "traefik.http.routers.shiftplan.rule=Host(`shift.fr4iser.com`)"
+      - "traefik.http.routers.shiftplan.tls=true"
+      - "traefik.http.routers.shiftplan.tls.certresolver=http_resolver"
+      
+      # Middleware Chain
+      - "traefik.http.routers.shiftplan.middlewares=default@file,rate-limit@docker"
+      
+      # Service Konfiguration
+      - "traefik.http.services.shiftplan.loadbalancer.server.port=80"
+      
+      # Sticky Sessions
+      - "traefik.http.services.shiftplan.loadbalancer.sticky.cookie.httpOnly=true"
+      - "traefik.http.services.shiftplan.loadbalancer.sticky.cookie.secure=true"
 
 networks:
-  app-network:
-    driver: bridge
+  proxy:
+    external: true
