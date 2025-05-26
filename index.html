@@ -10,91 +10,109 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-4xl mx-auto">
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
-                <h1 class="text-3xl font-bold text-gray-800 mb-4">Dienstplan Konverter</h1>
-                <p class="text-gray-600 mb-6">
-                    Konvertiere deinen Dienstplan-PDF direkt im Browser und synchronisiere ihn mit deinem Google Kalender.
-                </p>
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <h1 class="text-3xl font-bold mb-6">Dienstplan Konverter</h1>
+        <p class="mb-8 text-gray-600">Konvertiere deinen Dienstplan-PDF direkt im Browser und synchronisiere ihn mit deinem Google Kalender.</p>
 
-                <div class="space-y-6">
-                    <!-- Berufsgruppe und Voreinstellungen -->
-                    <div class="border rounded-lg p-4">
-                        <h2 class="text-xl font-semibold mb-4">Berufsgruppe & Voreinstellungen</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Berufsgruppe</label>
-                                <select id="professionSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="pflege">Pflege</option>
-                                    <option value="anasthesie">Anästhesie</option>
-                                    <option value="chirurgie">Chirurgie</option>
-                                    <option value="ota">OTA</option>
-                                    <option value="custom">Benutzerdefiniert</option>
-                                </select>
+        <!-- Berufsgruppe, Bereich, Voreinstellung & Schichttypen nebeneinander -->
+        <section class="mb-8">
+            <div class="border rounded-lg p-4 mb-4">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Linke Seite: Auswahlen -->
+                    <div class="flex-1 space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Berufsgruppe</label>
+                            <select id="professionSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="pflege">Pflege</option>
+                                <option value="aerzte">Ärzte</option>
+                                <option value="servicekraefte">Servicekräfte</option>
+                                <option value="custom">Benutzerdefiniert</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bereich</label>
+                            <select id="bereichSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="op">OP-Bereich</option>
+                                <option value="station1">Station 1</option>
+                                <option value="station2">Station 2</option>
+                                <option value="station3">Station 3</option>
+                                <option value="station4">Station 4</option>
+                                <option value="station5">Station 5</option>
+                                <option value="station6">Station 6</option>
+                                <option value="station7">Station 7</option>
+                                <option value="station8">Station 8</option>
+                                <option value="station9">Station 9</option>
+                                <option value="station10">Station 10</option>
+                                <option value="station11">Station 11</option>
+                                <option value="station12">Station 12</option>
+                                <option value="station13">Station 13</option>
+                                <option value="station14">Station 14</option>
+                                <option value="station15">Station 15</option>
+                                <option value="station16">Station 16</option>
+                                <option value="station17">Station 17</option>
+                                <option value="station18">Station 18</option>
+                                <option value="station19">Station 19</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Schichttyp-Set</label>
+                            <select id="presetSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <!-- Optionen werden dynamisch per JS eingefügt -->
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Rechte Seite: Schichttypen -->
+                    <div class="flex-1 min-w-[260px]">
+                        <div id="shiftTypesConfig" class="border rounded-lg p-4 h-full flex flex-col">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Schichttypen</h3>
+                                <button id="addShiftType" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">
+                                    + Neue Schicht
+                                </button>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Voreinstellung</label>
-                                <select id="presetSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="default">Standard</option>
-                                    <option value="anasthesie">Anästhesie</option>
-                                    <option value="chirurgie">Chirurgie</option>
-                                    <option value="ota">OTA</option>
-                                </select>
+                            <!-- Vorschau-Liste -->
+                            <div id="shiftTypesPreview" class="mb-4">
+                                <!-- Vorschau wird hier dynamisch eingefügt -->
+                            </div>
+                            <div id="shiftTypesList" class="space-y-2 flex-1 overflow-y-auto">
+                                <!-- Schichttypen werden hier dynamisch eingefügt -->
                             </div>
                         </div>
                     </div>
-
-                    <!-- Schichttypen Konfiguration -->
-                    <div id="shiftTypesConfig" class="border rounded-lg p-4">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-semibold">Schichttypen</h2>
-                            <button id="addShiftType" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">
-                                + Neue Schicht
-                            </button>
-                        </div>
-                        <div id="shiftTypesList" class="space-y-2">
-                            <!-- Schichttypen werden hier dynamisch eingefügt -->
-                        </div>
-                    </div>
-
-                    <!-- File Upload Section -->
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <input type="file" id="pdfInput" accept=".pdf" class="hidden">
-                        <label for="pdfInput" class="cursor-pointer">
-                            <div class="space-y-2">
-                                <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                </svg>
-                                <div class="text-gray-600">
-                                    <span class="font-medium">PDF-Datei auswählen</span> oder hierher ziehen
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-
-                    <!-- Preview Section -->
-                    <div id="previewSection" class="hidden">
-                        <h2 class="text-xl font-semibold mb-4">Vorschau</h2>
-                        <div id="previewContent" class="bg-gray-50 p-4 rounded-lg"></div>
-                    </div>
-
-                    <!-- Google Calendar Integration -->
-                    <div id="calendarSection" class="hidden">
-                        <h2 class="text-xl font-semibold mb-4">Google Kalender Integration</h2>
-                        <button id="authorizeButton" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                            Mit Google Kalender verbinden
-                        </button>
-                        <button id="syncButton" class="hidden bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 ml-4">
-                            Mit Kalender synchronisieren
-                        </button>
-                    </div>
-
-                    <!-- Status Messages -->
-                    <div id="statusMessages" class="space-y-2"></div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Upload -->
+        <section class="mb-8">
+            <h2 class="text-xl font-semibold mb-2">1. PDF hochladen</h2>
+            <div id="dropzone" class="dropzone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer mb-4">
+                <p>Datei hierher ziehen oder klicken zum Auswählen</p>
+                <input type="file" id="pdfInput" accept=".pdf" hidden>
+            </div>
+            <!-- Vorschau und Download-Button -->
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+                <div id="previewContent" class="mb-4 bg-gray-50 p-4 rounded flex-1"></div>
+                <button id="downloadBtn" class="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" style="display:none;">Dienstplan herunterladen</button>
+            </div>
+        </section>
+
+
+        <!-- Kalender -->
+        <section>
+            <h2 class="text-xl font-semibold mb-2">5. Kalender-Integration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="card bg-white p-4 rounded shadow">
+                    <h3 class="text-lg font-semibold mb-2">Google Calendar</h3>
+                    <button class="bg-blue-500 text-white px-4 py-2 rounded">Mit Google verbinden</button>
+                </div>
+                <div class="card bg-white p-4 rounded shadow">
+                    <h3 class="text-lg font-semibold mb-2">Andere Kalender (DAV, Nextcloud)</h3>
+                    <button class="bg-gray-400 text-white px-4 py-2 rounded" disabled>Demnächst verfügbar</button>
+                </div>
+            </div>
+        </section>
+
     </div>
 
     <!-- Template für Schichttyp-Eintrag -->
@@ -112,6 +130,7 @@
         </div>
     </template>
 
+    <!-- WICHTIG: app.js NACH ALLEN DOM-ELEMENTEN einbinden -->
     <script src="app.js"></script>
 </body>
-</html> 
+</html>

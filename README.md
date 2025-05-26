@@ -10,8 +10,11 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - Direkte Synchronisierung mit Google Kalender
 - Unterstützung für verschiedene Schichttypen (F, F1, F2, F3, M1, M2, M3, B36, B38, MO)
 - Bereitschaftsdienste werden automatisch erkannt
+- Anpassbare Schichttypen für verschiedene Berufsgruppen
 
 ## Setup
+
+### Lokale Entwicklung
 
 1. Erstelle ein Projekt in der [Google Cloud Console](https://console.cloud.google.com/)
 2. Aktiviere die Google Calendar API
@@ -22,13 +25,44 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
    const API_KEY = 'YOUR_API_KEY'; // Dein API Key
    ```
 
+### Docker Deployment
+
+1. Stelle sicher, dass Docker und Docker Compose installiert sind
+2. Klone das Repository:
+   ```bash
+   git clone <repository-url>
+   cd ShiftPlanConverter
+   ```
+3. Starte die Anwendung mit Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+4. Die Anwendung ist nun unter `http://localhost:8080` erreichbar
+
+### Produktions-Deployment
+
+1. Konfiguriere die Google Cloud Console:
+   - Füge deine Domain zu den autorisierten JavaScript-Ursprüngen hinzu
+   - Füge deine Domain zu den autorisierten Weiterleitungs-URIs hinzu
+
+2. Passe die Nginx-Konfiguration an:
+   - Bearbeite `nginx.conf` für deine spezifischen Anforderungen
+   - Passe die Server-Name und SSL-Konfiguration an
+
+3. Starte die Anwendung:
+   ```bash
+   docker-compose up -d
+   ```
+
 ## Verwendung
 
-1. Öffne die `index.html` in einem modernen Webbrowser
-2. Wähle deine Dienstplan-PDF aus
-3. Überprüfe die Vorschau der erkannten Einträge
-4. Klicke auf "Mit Google Kalender verbinden"
-5. Nach erfolgreicher Anmeldung, klicke auf "Mit Kalender synchronisieren"
+1. Öffne die Anwendung im Browser
+2. Wähle deine Berufsgruppe aus
+3. Wähle oder passe die Schichttypen an
+4. Wähle deine Dienstplan-PDF aus
+5. Überprüfe die Vorschau der erkannten Einträge
+6. Klicke auf "Mit Google Kalender verbinden"
+7. Nach erfolgreicher Anmeldung, klicke auf "Mit Kalender synchronisieren"
 
 ## Technische Details
 
@@ -37,6 +71,7 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - Verarbeitet alle Daten lokal im Browser
 - Unterstützt Drag & Drop für PDF-Dateien
 - Zeigt detaillierte Statusmeldungen während der Verarbeitung
+- Docker-Container mit Nginx für einfaches Deployment
 
 ## Sicherheit
 
@@ -44,6 +79,7 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - Alle Verarbeitung erfolgt lokal im Browser
 - Google OAuth 2.0 für sichere Kalenderauthentifizierung
 - Minimale Berechtigungen (nur Kalenderzugriff)
+- Sichere Nginx-Konfiguration mit modernen Security-Headers
 
 ## Unterstützte Schichttypen
 
@@ -60,6 +96,20 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - URLAUB: Ganztägig
 - FEIERTAG: Ganztägig
 
+## Berufsgruppen-spezifische Schichttypen
+
+### Anästhesie
+- NEF: 08:00-20:00
+- NEF-N: 20:00-08:00
+
+### Chirurgie
+- OP: 08:00-20:00
+- OP-N: 20:00-08:00
+
+### OTA
+- OP: 08:00-20:00
+- OP-N: 20:00-08:00
+
 ## Fehlerbehebung
 
 1. **PDF wird nicht erkannt**
@@ -75,6 +125,11 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
    - Überprüfe die Internetverbindung
    - Stelle sicher, dass du die notwendigen Berechtigungen erteilt hast
    - Versuche es erneut nach einigen Minuten
+
+4. **Docker-Probleme**
+   - Überprüfe die Docker-Logs: `docker-compose logs`
+   - Stelle sicher, dass Port 8080 nicht belegt ist
+   - Überprüfe die Nginx-Konfiguration
 
 ## Lizenz
 
