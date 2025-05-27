@@ -88,10 +88,63 @@ export function initGoogleCalendar() {
                             const response = await gapi.client.calendar.calendarList.list();
                             console.log('Available calendars:', response.result.items);
 
+                            // Kalenderauswahl-Dropdown und Button referenzieren
+                            const calendarSelect = document.getElementById('calendarSelect');
+                            const createCalendarBtn = document.getElementById('createCalendarBtn');
+
+                            if (calendarSelect) {
+                                // Dropdown befüllen
+                                calendarSelect.innerHTML = '';
+                                response.result.items.forEach(cal => {
+                                    const opt = document.createElement('option');
+                                    opt.value = cal.id;
+                                    opt.textContent = cal.summary || cal.id;
+                                    calendarSelect.appendChild(opt);
+                                });
+                                calendarSelect.style.display = '';
+                                calendarSelect.disabled = false;
+                            }
+                            if (createCalendarBtn) {
+                                createCalendarBtn.style.display = '';
+                                createCalendarBtn.disabled = false;
+
+                                // Handler zum Anlegen eines neuen Kalenders
+                                createCalendarBtn.onclick = async () => {
+                                    const calendarName = prompt('Name für neuen Kalender:', 'Dienstplan');
+                                    if (!calendarName) return;
+                                    try {
+                                        // Kalender anlegen
+                                        await gapi.client.calendar.calendars.insert({
+                                            resource: { summary: calendarName }
+                                        });
+                                        // Kalenderliste neu laden und Dropdown aktualisieren
+                                        const newResponse = await gapi.client.calendar.calendarList.list();
+                                        calendarSelect.innerHTML = '';
+                                        newResponse.result.items.forEach(cal => {
+                                            const opt = document.createElement('option');
+                                            opt.value = cal.id;
+                                            opt.textContent = cal.summary || cal.id;
+                                            calendarSelect.appendChild(opt);
+                                        });
+                                        // Neu angelegten Kalender auswählen
+                                        const created = newResponse.result.items.find(cal => cal.summary === calendarName);
+                                        if (created) calendarSelect.value = created.id;
+                                        alert('Neuer Kalender erfolgreich angelegt!');
+                                    } catch (e) {
+                                        alert('Fehler beim Anlegen des Kalenders: ' + (e.message || e));
+                                    }
+                                };
+                            }
+
                             // Show and enable sync button
                             syncBtn.style.display = '';
                             syncBtn.disabled = false;
-                            syncBtn.onclick = () => syncToCalendar(response.result.items[0].id);
+
+                            // Synchronisation auf gewählten Kalender anwenden
+                            syncBtn.onclick = () => {
+                                const selectedCalendarId = calendarSelect ? calendarSelect.value : response.result.items[0].id;
+                                syncToCalendar(selectedCalendarId);
+                            };
 
                             // Update connect button
                             connectBtn.textContent = 'Verbunden';
@@ -141,7 +194,39 @@ async function syncToCalendar(calendarId) {
             alert('Keine Einträge zum Synchronisieren gefunden.');
             return;
         }
-        
+
+        // Zeitraum bestimmen (frühestes und spätestes Datum)
+        const dates = entries.map(e => e.date).filter(Boolean).sort();
+        const startDate = dates[0];
+        const endDate = dates[dates.length - 1];
+
+        // Vorher alle Events im Zeitraum löschen ("Clear & Create")
+        let deletedCount = 0;
+        if (startDate && endDate) {
+            // Events im Zeitraum abrufen
+            const listResp = await gapi.client.calendar.events.list({
+                calendarId: calendarId,
+                timeMin: `${startDate}T00:00:00+01:00`,
+                timeMax: `${endDate}T23:59:59+01:00`,
+                showDeleted: false,
+                singleEvents: true,
+                maxResults: 2500
+            });
+            const eventsToDelete = (listResp.result.items || []);
+            for (const ev of eventsToDelete) {
+                try {
+                    await gapi.client.calendar.events.delete({
+                        calendarId: calendarId,
+                        eventId: ev.id
+                    });
+                    deletedCount++;
+                } catch (e) {
+                    // Fehler beim Löschen ignorieren, aber loggen
+                    console.warn('Fehler beim Löschen eines Events:', e);
+                }
+            }
+        }
+
         let successCount = 0;
         for (const entry of entries) {
             const event = {
@@ -167,7 +252,7 @@ async function syncToCalendar(calendarId) {
             successCount++;
         }
 
-        alert(`${successCount} Einträge erfolgreich mit Google Calendar synchronisiert!`);
+        alert(`${successCount} Einträge erfolgreich mit Google Calendar synchronisiert!\n${deletedCount} alte Einträge wurden entfernt.`);
     } catch (error) {
         console.error('Sync error:', error);
         alert('Fehler bei der Synchronisation mit Google Calendar. Bitte versuchen Sie es erneut.');
@@ -175,4 +260,4 @@ async function syncToCalendar(calendarId) {
         syncBtn.disabled = false;
         syncBtn.textContent = 'Mit Kalender synchronisieren';
     }
-} 
+}

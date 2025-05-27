@@ -59,6 +59,14 @@ initUpload({
                 const csv = convertParsedEntriesToCSV(parsed.entries);
                 console.log('Konvertierte Einträge:', parsed.entries);
                 console.log('CSV:', csv);
+
+                // Einträge nach dem Parsen automatisch in localStorage speichern
+                try {
+                    localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+                } catch (e) {
+                    console.warn('Konnte parsedEntries nicht in localStorage speichern:', e);
+                }
+
                 // Vorschau aktualisieren
                 renderPreview(parsed.entries);
 
