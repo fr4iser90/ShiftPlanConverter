@@ -5,6 +5,33 @@
 
 let isGoogleApiLoaded = false;
 let isInitializing = false;
+let tokenClient = null;
+let gapiInited = false;
+let gisInited = false;
+
+// Initialize Google Identity Services
+function gisLoaded() {
+    gisInited = true;
+    console.log('Google Identity Services loaded');
+}
+
+// Initialize Google API Client
+function gapiLoaded() {
+    gapi.load('client', async () => {
+        try {
+            await gapi.client.init({
+                apiKey: null,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+            });
+            gapiInited = true;
+            isGoogleApiLoaded = true;
+            isInitializing = false;
+            console.log('Google API client library loaded');
+        } catch (error) {
+            console.error('Error initializing Google API client:', error);
+        }
+    });
+}
 
 export function initGoogleCalendar() {
     const clientIdInput = document.getElementById('googleClientId');
@@ -16,14 +43,22 @@ export function initGoogleCalendar() {
     // Initially hide sync button
     syncBtn.style.display = 'none';
 
-    // Load the Google API client library
-    if (!isGoogleApiLoaded && !isInitializing) {
-        isInitializing = true;
-        gapi.load('client:auth2', () => {
-            console.log('Google API client library loaded');
-            isGoogleApiLoaded = true;
-            isInitializing = false;
-        });
+    // Set up callback for Google Identity Services
+    window.onload = function() {
+        if (window.google) {
+            gisLoaded();
+        }
+    };
+
+    // Set up callback for Google API Client
+    if (window.gapi) {
+        gapiLoaded();
+    } else {
+        window.onload = function() {
+            if (window.gapi) {
+                gapiLoaded();
+            }
+        };
     }
 
     connectBtn.addEventListener('click', async () => {
@@ -33,7 +68,7 @@ export function initGoogleCalendar() {
             return;
         }
 
-        if (!isGoogleApiLoaded) {
+        if (!gapiInited || !gisInited) {
             alert('Bitte warten Sie einen Moment, bis die Google API geladen ist.');
             return;
         }
@@ -42,31 +77,38 @@ export function initGoogleCalendar() {
             connectBtn.disabled = true;
             connectBtn.textContent = 'Verbinde...';
 
-            // Initialize the Google API client
-            await gapi.client.init({
-                apiKey: null, // No API key needed
-                clientId: clientId,
-                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-                scope: 'https://www.googleapis.com/auth/calendar.events'
+            // Initialize token client
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+                callback: async (tokenResponse) => {
+                    if (tokenResponse && tokenResponse.access_token) {
+                        try {
+                            // Get user's calendars
+                            const response = await gapi.client.calendar.calendarList.list();
+                            console.log('Available calendars:', response.result.items);
+
+                            // Show and enable sync button
+                            syncBtn.style.display = '';
+                            syncBtn.disabled = false;
+                            syncBtn.onclick = () => syncToCalendar(response.result.items[0].id);
+
+                            // Update connect button
+                            connectBtn.textContent = 'Verbunden';
+                            connectBtn.classList.remove('bg-blue-500');
+                            connectBtn.classList.add('bg-green-500');
+                        } catch (error) {
+                            console.error('Calendar list error:', error);
+                            alert('Fehler beim Abrufen der Kalenderliste.');
+                            connectBtn.disabled = false;
+                            connectBtn.textContent = 'Mit Google verbinden';
+                        }
+                    }
+                },
             });
 
-            // Sign in the user
-            const googleAuth = gapi.auth2.getAuthInstance();
-            await googleAuth.signIn();
-
-            // Get user's calendars
-            const response = await gapi.client.calendar.calendarList.list();
-            console.log('Available calendars:', response.result.items);
-
-            // Show and enable sync button
-            syncBtn.style.display = '';
-            syncBtn.disabled = false;
-            syncBtn.onclick = () => syncToCalendar(response.result.items[0].id);
-
-            // Update connect button
-            connectBtn.textContent = 'Verbunden';
-            connectBtn.classList.remove('bg-blue-500');
-            connectBtn.classList.add('bg-green-500');
+            // Request access token
+            tokenClient.requestAccessToken();
 
         } catch (error) {
             console.error('Google Calendar integration error:', error);
@@ -74,13 +116,13 @@ export function initGoogleCalendar() {
             connectBtn.textContent = 'Mit Google verbinden';
             
             if (error.error === 'popup_closed_by_user') {
-                alert('Anmeldung wurde abgebrochen.');
+                alert('Die Anmeldung wurde abgebrochen. Sie können es jederzeit erneut versuchen.');
             } else if (error.error === 'immediate_failed') {
-                alert('Bitte melden Sie sich bei Google an.');
+                alert('Bitte melden Sie sich zuerst bei Google an, bevor Sie fortfahren.');
             } else if (error.error === 'idpiframe_initialization_failed') {
                 alert('Bitte stellen Sie sicher, dass Sie die Domain https://shift.fr4iser.com in der Google Cloud Console als autorisierte JavaScript-Ursprung hinzugefügt haben.\n\nDirekter Link: https://console.cloud.google.com/apis/credentials');
             } else {
-                alert('Fehler bei der Google Calendar Integration. Bitte überprüfen Sie Ihre Client ID und Berechtigungen.');
+                alert('Um Ihre Dienstplan-Einträge mit Google Kalender zu synchronisieren, müssen Sie den Zugriff erlauben. Dies ist ein einmaliger Vorgang und Sie können den Zugriff jederzeit widerrufen.');
             }
         }
     });

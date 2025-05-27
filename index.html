@@ -8,7 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <!-- Google API Client Library -->
     <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -114,9 +115,13 @@
                         <p class="text-sm text-gray-500 mt-1">
                             <a href="https://console.cloud.google.com" target="_blank" class="text-blue-500 hover:underline">Get your Client ID</a>
                         </p>
+                        <p class="text-sm text-gray-600 mt-2">
+                            Hinweis: Sie werden zu Google weitergeleitet, um den Zugriff auf Ihren Kalender zu erlauben. 
+                            Dies ist notwendig, um Ihre Dienstplan-Einträge zu synchronisieren.
+                        </p>
                     </div>
                     <div class="space-y-2">
-                        <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded">Mit Google verbinden</button>
+                        <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded">Mit Google Kalender verbinden</button>
                         <button id="syncBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Mit Kalender synchronisieren</button>
                     </div>
                 </div>
