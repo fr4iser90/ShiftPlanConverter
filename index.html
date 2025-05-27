@@ -14,8 +14,49 @@
 </head>
 <body class="bg-gray-100 min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 class="text-3xl font-bold mb-6">Dienstplan Konverter</h1>
+        <div class="flex justify-between items-center mb-2">
+            <h1 class="text-3xl font-bold">Dienstplan Konverter</h1>
+            <button id="helpBtn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-lg" title="Hilfe anzeigen">?</button>
+        </div>
         <p class="mb-8 text-gray-600">Konvertiere deinen Dienstplan-PDF direkt im Browser und synchronisiere ihn mit deinem Google Kalender.</p>
+
+        <!-- Help Modal -->
+        <div id="helpModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" style="display:none;">
+            <div class="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 relative">
+                <button id="closeHelpModal" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl">&times;</button>
+                <h2 class="text-2xl font-bold mb-4">Hilfe & Anleitung</h2>
+                <div class="space-y-4 text-sm">
+                    <div>
+                        <b>Wie funktioniert das Tool?</b><br>
+                        <ul class="list-disc ml-5">
+                            <li>PDF auswählen – die Datei bleibt auf deinem Gerät, alles passiert direkt im Browser.</li>
+                            <li>Die konvertierten Dienste werden als Vorschau angezeigt und können als CSV gespeichert werden.</li>
+                            <li>Optional: Mit Google Kalender verbinden, Kalender auswählen und Einträge synchronisieren.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <b>Google Kalender & Client ID</b><br>
+                        <ul class="list-disc ml-5">
+                            <li>Für die Verbindung zum Google Kalender ist eine sogenannte "Client ID" nötig (siehe Anleitung unten).</li>
+                            <li>Du kannst eine eigene Client ID anlegen oder eine bereitgestellte verwenden.</li>
+                        </ul>
+                        <span class="text-xs text-gray-500">[Hier Screenshot/Schritt-für-Schritt-Anleitung einfügen]</span>
+                    </div>
+                    <div>
+                        <b>Datenschutz</b><br>
+                        <span class="text-green-700">Deine Daten werden <b>niemals hochgeladen</b> – alles bleibt lokal im Browser.</span>
+                    </div>
+                    <div>
+                        <b>FAQ</b>
+                        <ul class="list-disc ml-5">
+                            <li><b>Werden meine Daten hochgeladen?</b> – Nein, alles bleibt lokal im Browser.</li>
+                            <li><b>Warum brauche ich eine Google Client ID?</b> – Damit Google den Zugriff auf deinen Kalender absichern kann.</li>
+                            <li><b>Kann ich das Tool ohne Google nutzen?</b> – Ja, du kannst auch nur die Konvertierung und CSV-Export nutzen.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Berufsgruppe, Bereich, Voreinstellung & Schichttypen nebeneinander -->
         <section class="mb-8">

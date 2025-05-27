@@ -202,4 +202,23 @@ window.addEventListener('DOMContentLoaded', () => {
             renderShiftTypesList(updateCurrentShiftTypes());
         });
     }
+
+    // Help Modal öffnen/schließen
+    const helpBtn = document.getElementById('helpBtn');
+    const helpModal = document.getElementById('helpModal');
+    const closeHelpModal = document.getElementById('closeHelpModal');
+    if (helpBtn && helpModal && closeHelpModal) {
+        helpBtn.addEventListener('click', () => {
+            helpModal.style.display = '';
+        });
+        closeHelpModal.addEventListener('click', () => {
+            helpModal.style.display = 'none';
+        });
+        // Schließen bei Klick auf Hintergrund
+        helpModal.addEventListener('click', (e) => {
+            if (e.target === helpModal) {
+                helpModal.style.display = 'none';
+            }
+        });
+    }
 });
