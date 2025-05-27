@@ -234,19 +234,27 @@ async function syncToCalendar(calendarId) {
                 description += `\nOriginal: ${entry.type}, ${entry.start}, ${entry.end}`;
             }
 
+            // Korrektur: Enddatum auf Folgetag setzen, wenn Endzeit < Startzeit (über Mitternacht)
+            let endDate = entry.date;
+            if (!entry.allDay && entry.start && entry.end && entry.end < entry.start) {
+                const d = new Date(entry.date);
+                d.setDate(d.getDate() + 1);
+                endDate = d.toISOString().split('T')[0];
+            }
+
             const event = {
                 summary,
                 description,
                 start: {
-                    dateTime: entry.allDay ?
-                        `${entry.date}T00:00:00` :
-                        `${entry.date}T${entry.start}:00`,
+                    dateTime: entry.allDay
+                        ? `${entry.date}T00:00:00`
+                        : `${entry.date}T${entry.start}:00`,
                     timeZone: 'Europe/Berlin'
                 },
                 end: {
-                    dateTime: entry.allDay ?
-                        `${entry.date}T23:59:59` :
-                        `${entry.date}T${entry.end}:00`,
+                    dateTime: entry.allDay
+                        ? `${entry.date}T23:59:59`
+                        : `${endDate}T${entry.end}:00`,
                     timeZone: 'Europe/Berlin'
                 }
             };
