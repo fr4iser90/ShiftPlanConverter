@@ -14,3 +14,151 @@
 #shiftTypesPreview .font-bold {
   color: #2563eb;
 }
+
+/* === Augenschonende Themes === */
+.theme-light {
+  --bg: #f9fafb;
+  --fg: #222;
+  --accent: #2563eb;
+  --border: #e5e7eb;
+  --table-bg: #fff;
+}
+.theme-dark {
+  --bg: #181a1b;
+  --fg: #e0e6eb;
+  --accent: #7dd3fc;
+  --border: #23272e;
+  --table-bg: #23272e;
+}
+.theme-sepia {
+  --bg: #f4ecd8;
+  --fg: #4b3f2a;
+  --accent: #b48a3c;
+  --border: #e0d6c3;
+  --table-bg: #f9f6ef;
+}
+
+/* Anwendung der Theme-Variablen */
+body {
+  background: var(--bg, #fff);
+  color: var(--fg, #222);
+  transition: background 0.2s, color 0.2s;
+}
+a, .font-bold {
+  color: var(--accent, #2563eb);
+}
+table {
+  background: var(--table-bg, #fff);
+}
+th, td {
+  border-color: var(--border, #e5e7eb);
+}
+button, input, select {
+  background: var(--table-bg, #fff);
+  color: var(--fg, #222);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+/* === Theme Overrides für Tailwind-Klassen und wichtige Komponenten === */
+.theme-dark .bg-white,
+.theme-sepia .bg-white {
+  background: var(--table-bg, #fff) !important;
+}
+.theme-dark .bg-gray-50,
+.theme-sepia .bg-gray-50 {
+  background: var(--bg, #fff) !important;
+}
+.theme-dark .bg-gray-200,
+.theme-sepia .bg-gray-200 {
+  background: var(--border, #e5e7eb) !important;
+  color: var(--fg, #222) !important;
+}
+.theme-dark .bg-gray-400,
+.theme-sepia .bg-gray-400 {
+  background: var(--border, #e5e7eb) !important;
+  color: var(--fg, #222) !important;
+}
+.theme-dark .bg-blue-500,
+.theme-sepia .bg-blue-500 {
+  background: var(--accent, #2563eb) !important;
+  color: #fff !important;
+}
+.theme-dark .bg-green-500,
+.theme-sepia .bg-green-500 {
+  background: #22c55e !important;
+  color: #fff !important;
+}
+.theme-dark .text-gray-600,
+.theme-sepia .text-gray-600 {
+  color: var(--fg, #222) !important;
+}
+.theme-dark .text-gray-700,
+.theme-sepia .text-gray-700 {
+  color: var(--fg, #222) !important;
+}
+.theme-dark .text-gray-500,
+.theme-sepia .text-gray-500 {
+  color: var(--fg, #222) !important;
+}
+.theme-dark .border-gray-300,
+.theme-sepia .border-gray-300 {
+  border-color: var(--border, #e5e7eb) !important;
+}
+.theme-dark .border-gray-400,
+.theme-sepia .border-gray-400 {
+  border-color: var(--border, #e5e7eb) !important;
+}
+.theme-dark .shadow,
+.theme-sepia .shadow {
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.4) !important;
+}
+
+/* Vorschau- und Dropzone-Boxen */
+#previewContent,
+#dropzone,
+.card {
+  background: var(--table-bg, #fff) !important;
+  color: var(--fg, #222) !important;
+  border: 1px solid var(--border, #e5e7eb) !important;
+}
+
+/* Download- und Konvertieren-Button */
+#downloadBtn,
+#convertBtn {
+  background: var(--accent, #2563eb) !important;
+  color: #fff !important;
+  border: none !important;
+}
+#downloadBtn:disabled,
+#convertBtn:disabled {
+  opacity: 0.5 !important;
+}
+
+/* Kalender-Integration Buttons */
+#connectGoogleBtn,
+#syncBtn,
+#createCalendarBtn {
+  background: var(--accent, #2563eb) !important;
+  color: #fff !important;
+  border: none !important;
+}
+#connectGoogleBtn.bg-green-500,
+#syncBtn.bg-green-500 {
+  background: #22c55e !important;
+}
+#connectGoogleBtn.bg-blue-500,
+#syncBtn.bg-blue-500 {
+  background: var(--accent, #2563eb) !important;
+}
+#connectGoogleBtn.bg-gray-200,
+#createCalendarBtn.bg-gray-200 {
+  background: var(--border, #e5e7eb) !important;
+  color: var(--fg, #222) !important;
+}
+
+/* Input-Felder */
+input, select, textarea {
+  background: var(--table-bg, #fff) !important;
+  color: var(--fg, #222) !important;
+  border: 1px solid var(--border, #e5e7eb) !important;
+}

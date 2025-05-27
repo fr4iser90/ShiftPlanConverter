@@ -12,11 +12,17 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-3xl">
         <div class="flex justify-between items-center mb-2">
             <h1 class="text-3xl font-bold">Dienstplan Konverter</h1>
-            <button id="helpBtn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-lg" title="Hilfe anzeigen">?</button>
+            <div class="flex items-center gap-2">
+                <!-- Theme Switcher Buttons -->
+                <button id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus (Standard)">☀️</button>
+                <button id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+                <button id="helpBtn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-lg" title="Hilfe anzeigen">?</button>
+            </div>
         </div>
         <p class="mb-8 text-gray-600">Konvertiere deinen Dienstplan-PDF direkt im Browser und synchronisiere ihn mit deinem Google Kalender.</p>
 
@@ -173,10 +179,11 @@
                         <button id="syncBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Mit Kalender synchronisieren</button>
                     </div>
                 </div>
-                <div class="card bg-white p-4 rounded shadow">
-                    <h3 class="text-lg font-semibold mb-2">Andere Kalender (DAV, Nextcloud)</h3>
-                    <button class="bg-gray-400 text-white px-4 py-2 rounded" disabled>Demnächst verfügbar</button>
-                </div>
+<div class="card bg-white p-4 rounded shadow">
+    <h3 class="text-lg font-semibold mb-2">Andere Kalender (DAV, Nextcloud)</h3>
+    <button id="icsExportBtn" class="bg-blue-500 text-white px-4 py-2 rounded w-full">Als .ics-Datei exportieren</button>
+    <p class="text-sm text-gray-600 mt-2">Exportiere deinen Dienstplan als .ics-Datei und importiere ihn in Nextcloud, Outlook, Apple Kalender, etc.</p>
+</div>
             </div>
         </section>
 
@@ -203,5 +210,9 @@
     <script type="module" src="convert.js"></script>
     <script type="module" src="preview.js"></script>
     <script type="module" src="main.js"></script>
+    <script type="module">
+        import { exportToICS } from './icsExport.js';
+        document.getElementById('icsExportBtn').addEventListener('click', () => exportToICS());
+    </script>
 </body>
 </html>

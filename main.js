@@ -94,6 +94,18 @@ initPDFLoad({
                     }, 0);
                 };
             }
+
+            // Enable .ics export and Google sync buttons after conversion
+            const icsExportBtn = document.getElementById('icsExportBtn');
+            if (icsExportBtn) {
+                icsExportBtn.disabled = false;
+                icsExportBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            const syncBtn = document.getElementById('syncBtn');
+            if (syncBtn) {
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         });
     }
 });
@@ -177,6 +189,32 @@ function renderShiftTypesList(currentShiftTypes) {
 
 // Initialisierung beim Laden
 window.addEventListener('DOMContentLoaded', () => {
+    // Disable .ics export and Google sync buttons initially
+    const icsExportBtn = document.getElementById('icsExportBtn');
+    if (icsExportBtn) {
+        icsExportBtn.disabled = true;
+        icsExportBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        icsExportBtn.addEventListener('click', (e) => {
+            const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+            if (!entries || entries.length === 0) {
+                e.preventDefault();
+                alert('Bitte zuerst einen Dienstplan konvertieren!');
+            }
+        });
+    }
+    const syncBtn = document.getElementById('syncBtn');
+    if (syncBtn) {
+        syncBtn.disabled = true;
+        syncBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        syncBtn.addEventListener('click', (e) => {
+            const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+            if (!entries || entries.length === 0) {
+                e.preventDefault();
+                alert('Bitte zuerst einen Dienstplan konvertieren!');
+            }
+        });
+    }
+
     updatePresetOptions();
     renderShiftTypesList(updateCurrentShiftTypes());
     initGoogleCalendar(); // Initialize Google Calendar integration
@@ -221,4 +259,37 @@ window.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // === Theme Switcher ===
+    const themeBtns = [
+        { id: 'themeLightBtn', theme: 'theme-light' },
+        { id: 'themeDarkBtn', theme: 'theme-dark' },
+        { id: 'themeSepiaBtn', theme: 'theme-sepia' }
+    ];
+    const body = document.body;
+
+    function setTheme(theme) {
+        // Entferne alle Theme-Klassen
+        body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+        // Setze neue Theme-Klasse
+        if (theme) body.classList.add(theme);
+        // Speichere Auswahl
+        localStorage.setItem('theme', theme);
+    }
+
+    // Theme aus localStorage beim Laden anwenden
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else {
+        setTheme('theme-light');
+    }
+
+    // Event-Listener für Theme-Buttons
+    themeBtns.forEach(({ id, theme }) => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.addEventListener('click', () => setTheme(theme));
+        }
+    });
 });
