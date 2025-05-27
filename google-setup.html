@@ -47,12 +47,14 @@
             <li class="step">
                 <b>OAuth-Client-ID erstellen</b><br>
                 Gehe zu <b>Anmeldedaten</b> und klicke auf <b>Anmeldedaten erstellen &rarr; OAuth-Client-ID</b>.<br>
-                Wähle als Anwendungstyp <b>Webanwendung</b> und gib einen Namen ein (z.B. "Dienstplan Konverter").
+                Wähle als Anwendungstyp <b>Webanwendung</b> und gib einen Namen ein (z.B. "Dienstplan Konverter").<br>
+                <span class="text-red-700 font-semibold">Wichtig: Für die Nutzung im Browser – egal ob am Desktop oder auf dem Handy – muss immer "Webanwendung" gewählt werden. Andere Typen wie "Desktop" oder "Andere" funktionieren nicht im mobilen Browser!</span>
                 <img src="assets/5.png" alt="OAuth-Client-ID erstellen" class="screenshot">
             </li>
             <li class="step">
                 <b>Autorisierte JavaScript-Quellen eintragen</b><br>
-                Füge <code>https://shift.fr4iser.com</code> als autorisierte Quelle hinzu. Wenn du das Tool selbst hostest, kannst du auch <code>http://localhost:8080</code> eintragen.
+                Füge <code>https://shift.fr4iser.com</code> als autorisierte Quelle hinzu. Wenn du das Tool selbst hostest, kannst du auch <code>http://localhost:8080</code> eintragen.<br>
+                <span class="text-sm text-gray-700">Achte darauf, dass die autorisierten JavaScript-Quellen und Redirect-URIs exakt mit der URL übereinstimmen, unter der du das Tool im Browser (auch am Handy) aufrufst.</span>
                 <img src="assets/6.png" alt="Autorisierte JavaScript-Quellen" class="screenshot">
             </li>
             <li class="step">
@@ -68,6 +70,11 @@
         <div class="mt-8">
             <h2 class="text-xl font-bold mb-4">FAQ</h2>
             <ul class="list-disc ml-6 space-y-2">
+                <li>
+                    <b>Das Google-Login-Fenster (Modal) lädt auf dem Handy nicht – was tun?</b><br>
+                    Prüfe, ob du als Anwendungstyp wirklich <b>Webanwendung</b> gewählt hast und die autorisierten JavaScript-Quellen sowie Redirect-URIs exakt mit der URL übereinstimmen, die du im mobilen Browser verwendest (z.B. <code>https://shift.fr4iser.com</code>).<br>
+                    Stelle sicher, dass Popups im Browser erlaubt sind und versuche ggf. den Cache zu leeren. Bei Self-Hosting muss die lokale Adresse (z.B. <code>http://localhost:8080</code>) ebenfalls eingetragen sein.
+                </li>
                 <li>
                     <b>Was bedeutet "Extern" bei der Google App?</b><br>
                     "Extern" ist nur ein technischer Begriff für die App-Registrierung. Deine Daten bleiben privat. Nur du (bzw. eingetragene Testnutzer) können die App nutzen. Niemand sonst sieht deinen Dienstplan oder Kalender.
