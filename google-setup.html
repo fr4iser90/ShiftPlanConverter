@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Kalender Integration – Schritt für Schritt</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .screenshot { border: 1px solid #ddd; border-radius: 6px; margin: 12px 0; max-width: 100%; }
+        .step { margin-bottom: 2.5rem; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 class="text-3xl font-bold mb-6">Google Kalender Integration – Schritt für Schritt</h1>
+        <p class="mb-6 text-gray-700">
+            Diese Anleitung zeigt dir, wie du eine Google Client ID erstellst und das Tool sicher mit deinem Google Kalender verbindest.<br>
+            <span class="text-green-700 font-semibold">Wichtig: Deine Daten bleiben immer lokal im Browser!</span>
+        </p>
+        <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded">
+            <b>Datenschutz & Privatsphäre:</b><br>
+            Auch wenn du die Google App als <b>"extern"</b> registrierst, bleiben deine Daten privat. Nur du selbst (bzw. die von dir eingetragenen Testnutzer) können die App nutzen. Niemand außer dir hat Zugriff auf deinen Dienstplan oder Kalender. Die App dient ausschließlich der Google-Authentifizierung – deine Daten werden niemals öffentlich oder für andere sichtbar.
+        </div>
+        <ol class="list-decimal ml-6 space-y-8">
+            <li class="step">
+                <b>Google Cloud Console öffnen</b><br>
+                Rufe die Google Cloud Console auf:<br>
+                <a href="https://console.cloud.google.com/" target="_blank" class="text-blue-500 underline">https://console.cloud.google.com/</a>
+                <img src="assets/1.png" alt="Google Cloud Console öffnen" class="screenshot">
+            </li>
+            <li class="step">
+                <b>Neues Projekt anlegen</b><br>
+                Klicke links oben auf das Projekt-Dropdown und dann auf <b>Neues Projekt</b>.
+                <img src="assets/2.png" alt="Neues Projekt anlegen" class="screenshot">
+            </li>
+            <li class="step">
+                <b>APIs & Dienste aktivieren</b><br>
+                Wähle im Menü <b>APIs & Dienste</b> und aktiviere die Google Kalender API für dein Projekt.
+                <img src="assets/3.png" alt="APIs & Dienste aktivieren" class="screenshot">
+            </li>
+            <li class="step">
+                <b>OAuth-Zustimmungsbildschirm konfigurieren</b><br>
+                Gehe zu <b>APIs & Dienste &rarr; OAuth-Zustimmungsbildschirm</b>.<br>
+                Wähle <b>Extern</b> als Nutzertyp (auch wenn du keine Organisation hast). Gib die erforderlichen Informationen wie App-Name, Support-E-Mail und ggf. Branding ein. Trage nur die nötigsten Daten ein, Abrechnung ist nicht erforderlich. Die App bleibt privat und ist nur für dich bzw. eingetragene Testnutzer sichtbar.
+                <img src="assets/4.png" alt="OAuth-Zustimmungsbildschirm konfigurieren" class="screenshot">
+            </li>
+            <li class="step">
+                <b>OAuth-Client-ID erstellen</b><br>
+                Gehe zu <b>Anmeldedaten</b> und klicke auf <b>Anmeldedaten erstellen &rarr; OAuth-Client-ID</b>.<br>
+                Wähle als Anwendungstyp <b>Webanwendung</b> und gib einen Namen ein (z.B. "Dienstplan Konverter").
+                <img src="assets/5.png" alt="OAuth-Client-ID erstellen" class="screenshot">
+            </li>
+            <li class="step">
+                <b>Autorisierte JavaScript-Quellen eintragen</b><br>
+                Füge <code>https://shift.fr4iser.com</code> als autorisierte Quelle hinzu. Wenn du das Tool selbst hostest, kannst du auch <code>http://localhost:8080</code> eintragen.
+                <img src="assets/6.png" alt="Autorisierte JavaScript-Quellen" class="screenshot">
+            </li>
+            <li class="step">
+                <b>Client ID kopieren & im Tool eintragen</b><br>
+                Nach dem Erstellen wird dir die Client ID angezeigt. Kopiere sie und trage sie im Tool im Feld <b>Google Client ID</b> ein.
+                <img src="assets/7.png" alt="Client ID kopieren" class="screenshot">
+            </li>
+            <li class="step">
+                <b>Zugriff erlauben & Kalender synchronisieren</b><br>
+                Folge den Anweisungen im Tool, um den Zugriff zu erlauben und deine Kalendereinträge zu synchronisieren.
+            </li>
+        </ol>
+        <div class="mt-8">
+            <h2 class="text-xl font-bold mb-4">FAQ</h2>
+            <ul class="list-disc ml-6 space-y-2">
+                <li>
+                    <b>Was bedeutet "Extern" bei der Google App?</b><br>
+                    "Extern" ist nur ein technischer Begriff für die App-Registrierung. Deine Daten bleiben privat. Nur du (bzw. eingetragene Testnutzer) können die App nutzen. Niemand sonst sieht deinen Dienstplan oder Kalender.
+                </li>
+                <li>
+                    <b>Werden meine Daten hochgeladen oder veröffentlicht?</b><br>
+                    Nein, alles bleibt lokal im Browser. Es werden keine Daten an einen Server oder Dritte übertragen.
+                </li>
+                <li>
+                    <b>Warum brauche ich eine Google Client ID?</b><br>
+                    Damit Google weiß, welche App auf deinen Kalender zugreifen möchte und du die Kontrolle über die Berechtigungen hast.
+                </li>
+                <li>
+                    <b>Kann ich das Tool ohne Google nutzen?</b><br>
+                    Ja, du kannst auch nur die Konvertierung und den CSV-Export nutzen.
+                </li>
+            </ul>
+        </div>
+        <div class="mt-8 p-4 bg-blue-50 border border-blue-200 rounded">
+            <h2 class="text-lg font-bold mb-2">Self-Hosting & Quellcode</h2>
+            <p>
+                Du möchtest das Tool selbst hosten oder anpassen? Den Quellcode findest du auf GitHub:<br>
+                <a href="https://github.com/fr4iser90/ShiftPlanConverter" target="_blank" class="text-blue-500 underline">github.com/fr4iser90/ShiftPlanConverter</a>
+            </p>
+            <p class="mt-2">
+                Die Screenshots dieser Anleitung findest du im <b>assets</b>-Ordner. Für Self-Hosting einfach die HTML-Datei und den assets-Ordner gemeinsam verwenden.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
