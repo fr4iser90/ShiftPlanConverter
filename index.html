@@ -88,15 +88,16 @@
 
         <!-- Upload -->
         <section class="mb-8">
-            <h2 class="text-xl font-semibold mb-2">1. PDF hochladen</h2>
+            <h2 class="text-xl font-semibold mb-2">1. PDF auswählen & konvertieren (alles lokal!)</h2>
             <div id="dropzone" class="dropzone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer mb-4">
-                <p>Datei hierher ziehen oder klicken zum Auswählen</p>
+                <p>Datei hierher ziehen oder klicken zum Auswählen<br>
+                <span class="text-xs text-gray-500">Die Datei wird <b>nicht hochgeladen</b> – alles passiert nur im Browser.</span></p>
                 <input type="file" id="pdfInput" accept=".pdf" hidden>
             </div>
             <!-- Vorschau und Download-Button -->
             <div class="flex flex-col md:flex-row md:items-center gap-4">
                 <div id="previewContent" class="mb-4 bg-gray-50 p-4 rounded flex-1"></div>
-                <button id="convertBtn" class="bg-blue-500 text-white px-4 py-2 rounded" style="display:none;">Dienstplan konvertieren</button>
+                <button id="convertBtn" class="bg-blue-500 text-white px-4 py-2 rounded" style="display:none;">Dienstplan konvertieren (lokal)</button>
                 <button id="downloadBtn" class="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" style="display:none;">Dienstplan herunterladen</button>
             </div>
         </section>
@@ -155,7 +156,7 @@
 
     <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
     <script type="module" src="shiftTypes.js"></script>
-    <script type="module" src="upload.js"></script>
+    <script type="module" src="pdfLoader.js"></script>
     <script type="module" src="convert.js"></script>
     <script type="module" src="preview.js"></script>
     <script type="module" src="main.js"></script>

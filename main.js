@@ -4,31 +4,32 @@
  */
 
 import { shiftTypes, getPresetGroup, addShiftType, deleteShiftType, updateShiftType } from './shiftTypes.js';
-import { initUpload } from './upload.js';
+import { initPDFLoad } from './pdfLoader.js';
 
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
 import { initGoogleCalendar } from './googleCalendar.js';
 
-// Initialisierung Upload
-initUpload({
+
+initPDFLoad({
     onPdfLoaded: (arrayBuffer, file) => {
         // PDF-Text extrahieren (mit pdf.js)
-        window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise.then(function(pdf) {
-            pdf.getPage(1).then(async function(page) {
-                let pdfText = '';
+        window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise.then(async function(pdf) {
+            let pdfText = '';
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                let pageText = '';
                 // Versuche getText() (pdf.js >=3.0)
                 if (typeof page.getText === 'function') {
                     try {
-                        pdfText = await page.getText();
+                        pageText = await page.getText();
                     } catch (e) {
-                        pdfText = '';
+                        pageText = '';
                     }
                 }
                 // Fallback: Zeilen aus getTextContent() rekonstruieren
-                if (!pdfText) {
+                if (!pageText) {
                     const textContent = await page.getTextContent();
-                    // Gruppiere Items nach y-Koordinate (Zeilen)
                     let lastY = null;
                     let line = [];
                     let lines = [];
@@ -41,57 +42,58 @@ initUpload({
                         lastY = item.transform[5];
                     });
                     if (line.length) lines.push(line.join(' '));
-                    pdfText = lines.join('\n');
+                    pageText = lines.join('\n');
                 }
-                // Debug: Zeige den extrahierten PDF-Text
-                console.log('Extrahierter PDF-Text:\n', pdfText);
+                pdfText += (pdfText ? '\n' : '') + pageText;
+            }
+            // Debug: Zeige den extrahierten PDF-Text
+            console.log('Extrahierter PDF-Text:\n', pdfText);
 
-                // Get current dropdown values
-                const professionSelect = document.getElementById('professionSelect');
-                const bereichSelect = document.getElementById('bereichSelect');
-                const presetSelect = document.getElementById('presetSelect');
-                const profession = professionSelect ? professionSelect.value : '';
-                const bereich = bereichSelect ? bereichSelect.value : '';
-                const preset = presetSelect ? presetSelect.value : '';
+            // Get current dropdown values
+            const professionSelect = document.getElementById('professionSelect');
+            const bereichSelect = document.getElementById('bereichSelect');
+            const presetSelect = document.getElementById('presetSelect');
+            const profession = professionSelect ? professionSelect.value : '';
+            const bereich = bereichSelect ? bereichSelect.value : '';
+            const preset = presetSelect ? presetSelect.value : '';
 
-                // Konvertierung
-                const parsed = parseTimeSheet(pdfText, profession, bereich, preset);
-                const csv = convertParsedEntriesToCSV(parsed.entries);
-                console.log('Konvertierte Einträge:', parsed.entries);
-                console.log('CSV:', csv);
+            // Konvertierung
+            const parsed = parseTimeSheet(pdfText, profession, bereich, preset);
+            const csv = convertParsedEntriesToCSV(parsed.entries);
+            console.log('Konvertierte Einträge:', parsed.entries);
+            console.log('CSV:', csv);
 
-                // Einträge nach dem Parsen automatisch in localStorage speichern
-                try {
-                    localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-                } catch (e) {
-                    console.warn('Konnte parsedEntries nicht in localStorage speichern:', e);
-                }
+            // Einträge nach dem Parsen automatisch in localStorage speichern
+            try {
+                localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+            } catch (e) {
+                console.warn('Konnte parsedEntries nicht in localStorage speichern:', e);
+            }
 
-                // Vorschau aktualisieren
-                renderPreview(parsed.entries);
+            // Vorschau aktualisieren
+            renderPreview(parsed.entries);
 
-                // Download-Button anzeigen und aktivieren
-                const downloadBtn = document.getElementById('downloadBtn');
-                if (downloadBtn) {
-                    downloadBtn.style.display = '';
-                    downloadBtn.disabled = false;
-                    // Remove previous click handlers
-                    downloadBtn.onclick = null;
-                    downloadBtn.onclick = function() {
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'dienstplan.csv';
-                        document.body.appendChild(a);
-                        a.click();
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 0);
-                    };
-                }
-            });
+            // Download-Button anzeigen und aktivieren
+            const downloadBtn = document.getElementById('downloadBtn');
+            if (downloadBtn) {
+                downloadBtn.style.display = '';
+                downloadBtn.disabled = false;
+                // Remove previous click handlers
+                downloadBtn.onclick = null;
+                downloadBtn.onclick = function() {
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'dienstplan.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 0);
+                };
+            }
         });
     }
 });

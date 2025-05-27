@@ -90,67 +90,71 @@ export function parseTimeSheet(pdfData, profession, bereich, preset) {
     }
 
     // --- Pass 2: Process entries, handle merges, and build final list ---
+    // Debug-Ausgaben für Rohdaten
+    console.log("DEBUG mainEntries:", JSON.stringify(mainEntries, null, 2));
+    console.log("DEBUG bereitschaftEntries:", JSON.stringify(bereitschaftEntries, null, 2));
+
     const finalEntries = [];
     const handledMainIndices = new Set();
     const handledBereitschaftIndices = new Set();
 
-    // Prioritize finding B38 pairs and merging with M3
-    for (let i = 0; i < bereitschaftEntries.length; i++) {
-        if (handledBereitschaftIndices.has(i)) continue;
+    // Dynamische Spezialdienst-Erkennung: Tagdienst + beliebig viele Bereitschaftsdienste kombinieren
+    for (let m = 0; m < mainEntries.length; m++) {
+        if (handledMainIndices.has(m)) continue;
+        const mainEntry = mainEntries[m];
 
-        const item1 = bereitschaftEntries[i];
+        // Suche Bereitschaftsdienste, die direkt an den Tagdienst anschließen (am selben Tag)
+        let chain = [mainEntry];
+        let currentEnd = mainEntry.end;
+        let currentDate = mainEntry.date;
+        let foundBereitschaft = false;
 
-        // Look for B38 start (19:50 - 00:00)
-        if (item1.start === '19:50' && item1.end === '00:00') {
-            // Search for the corresponding end part (00:00 - 07:35 on the next day)
-            for (let j = 0; j < bereitschaftEntries.length; j++) {
-                if (i === j || handledBereitschaftIndices.has(j)) continue;
-
-                const item2 = bereitschaftEntries[j];
-                if (item2.start === '00:00' && item2.end === '07:35') {
-                    // Check if dates are consecutive
-                    const startDateObj = new Date(item1.date);
-                    startDateObj.setDate(startDateObj.getDate() + 1);
-                    const endDateCheckObj = new Date(item2.date);
-
-                    if (startDateObj.toISOString().split('T')[0] === endDateCheckObj.toISOString().split('T')[0]) {
-                        // B38 pair found. Check for preceding M3.
-                        let merged = false;
-                        for (let m = 0; m < mainEntries.length; m++) {
-                            if (handledMainIndices.has(m)) continue;
-                            const mainEntry = mainEntries[m];
-                            if (mainEntry.type === 'M3' && mainEntry.date === item1.date) {
-                                // Merge found! Create MO entry.
-                                finalEntries.push({
-                                    type: 'MO',
-                                    date: item1.date,
-                                    start: '11:35',
-                                    end: '07:35'
-                                });
-                                handledMainIndices.add(m);
-                                handledBereitschaftIndices.add(i);
-                                handledBereitschaftIndices.add(j);
-                                merged = true;
-                                break;
-                            }
-                        }
-
-                        if (!merged) {
-                            // No M3 found, create separate B38 entry
-                            finalEntries.push({
-                                type: 'B38',
-                                date: item1.date,
-                                start: '19:50',
-                                end: '07:35'
-                            });
-                            handledBereitschaftIndices.add(i);
-                            handledBereitschaftIndices.add(j);
-                        }
-                        break;
-                    }
+        // Suche alle Bereitschaftsdienste, die direkt anschließen (auch über Mitternacht)
+        for (let loop = 0; loop < 10; loop++) { // max 10er-Kette, Schutz vor Endlosschleife
+            let found = false;
+            for (let b = 0; b < bereitschaftEntries.length; b++) {
+                if (handledBereitschaftIndices.has(b)) continue;
+                const bEntry = bereitschaftEntries[b];
+                if (bEntry.date === currentDate && bEntry.start === currentEnd) {
+                    chain.push(bEntry);
+                    currentEnd = bEntry.end;
+                    handledBereitschaftIndices.add(b);
+                    found = true;
+                    foundBereitschaft = true;
+                    break;
+                }
+                // Über Mitternacht: Bereitschaft endet 00:00, nächster Block am Folgetag mit 00:00
+                if (bEntry.start === '00:00' && bEntry.date === addDays(currentDate, 1) && currentEnd === '00:00') {
+                    chain.push(bEntry);
+                    currentEnd = bEntry.end;
+                    currentDate = bEntry.date;
+                    handledBereitschaftIndices.add(b);
+                    found = true;
+                    foundBereitschaft = true;
+                    break;
                 }
             }
+            if (!found) break;
         }
+
+        if (chain.length > 1) {
+            // Kombinierter Spezialdienst (MO, Langdienst, etc.)
+            finalEntries.push({
+                type: 'MO',
+                date: mainEntry.date,
+                start: mainEntry.start,
+                end: chain[chain.length - 1].end
+            });
+            handledMainIndices.add(m);
+            // Bereitschafts-Indizes wurden oben schon markiert
+        }
+    }
+
+    // Hilfsfunktion für Datum +1
+    function addDays(dateStr, days) {
+        const d = new Date(dateStr);
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
     }
 
     // Add any unhandled main entries

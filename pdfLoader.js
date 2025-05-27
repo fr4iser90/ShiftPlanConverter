@@ -4,7 +4,7 @@
  * Exportiert eine Initialisierungsfunktion und ein Callback für den PDF-Inhalt.
  */
 
-export function initUpload({ onPdfLoaded }) {
+export function initPDFLoad({ onPdfLoaded }) {
     const dropzone = document.getElementById('dropzone');
     const pdfInput = document.getElementById('pdfInput');
 

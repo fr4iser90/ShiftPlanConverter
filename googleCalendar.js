@@ -229,8 +229,23 @@ async function syncToCalendar(calendarId) {
 
         let successCount = 0;
         for (const entry of entries) {
+            // Titel: Code + Zeit (falls vorhanden)
+            let summary = entry.type;
+            if (!entry.allDay && entry.start && entry.end) {
+                summary += ` ${entry.start}–${entry.end}`;
+            }
+
+            // Beschreibung: Hinweis + Originaldaten
+            let description = "Automatisch importiert aus Dienstplan – keine Gewähr.";
+            if (entry.allDay) {
+                description += `\nOriginal: ${entry.type}`;
+            } else {
+                description += `\nOriginal: ${entry.type}, ${entry.start}, ${entry.end}`;
+            }
+
             const event = {
-                summary: entry.type,
+                summary,
+                description,
                 start: {
                     dateTime: entry.allDay ? 
                         `${entry.date}T00:00:00` : 
