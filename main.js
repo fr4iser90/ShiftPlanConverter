@@ -3,13 +3,27 @@
  * Zentrale Steuerung der App, verbindet alle Module.
  */
 
-import { shiftTypes, getPresetGroup, addShiftType, deleteShiftType, updateShiftType } from './shiftTypes.js';
+import { loadShiftTypes } from './src/shiftTypesLoader.js';
+// import { shiftTypes, getPresetGroup, addShiftType, deleteShiftType, updateShiftType } from './shiftTypes.js';
 import { initPDFLoad } from './pdfLoader.js';
 
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
 import { initGoogleCalendar } from './googleCalendar.js';
 
+
+let shiftTypes = {};
+let currentKrankenhaus = 'st-elisabeth-leipzig';
+
+async function reloadShiftTypesAndUI() {
+    try {
+        shiftTypes = await loadShiftTypes(currentKrankenhaus);
+        updatePresetOptions();
+        renderShiftTypesList(updateCurrentShiftTypes());
+    } catch (e) {
+        alert('Fehler beim Laden der Schichttypen: ' + e.message);
+    }
+}
 
 initPDFLoad({
     onPdfLoaded: (arrayBuffer, file) => {
@@ -58,7 +72,7 @@ initPDFLoad({
             const preset = presetSelect ? presetSelect.value : '';
 
             // Konvertierung
-            const parsed = parseTimeSheet(pdfText, profession, bereich, preset);
+            const parsed = parseTimeSheet(pdfText, profession, bereich, preset, shiftTypes);
             const csv = convertParsedEntriesToCSV(parsed.entries);
             console.log('Konvertierte Einträge:', parsed.entries);
             console.log('CSV:', csv);
@@ -215,8 +229,17 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    updatePresetOptions();
-    renderShiftTypesList(updateCurrentShiftTypes());
+    // Krankenhausauswahl initialisieren
+    const krankenhausSelect = document.getElementById('krankenhausSelect');
+    if (krankenhausSelect) {
+        currentKrankenhaus = krankenhausSelect.value;
+        krankenhausSelect.addEventListener('change', async () => {
+            currentKrankenhaus = krankenhausSelect.value;
+            await reloadShiftTypesAndUI();
+        });
+    }
+
+    reloadShiftTypesAndUI();
     initGoogleCalendar(); // Initialize Google Calendar integration
 
     // Event-Listener für Dropdowns

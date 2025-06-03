@@ -15,7 +15,15 @@
 <body class="min-h-screen">
     <div class="container mx-auto px-4 py-8 max-w-3xl">
         <div class="flex justify-between items-center mb-2">
-            <h1 class="text-3xl font-bold">Dienstplan Konverter</h1>
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold">Dienstplan Konverter</h1>
+                <div>
+                    <label for="krankenhausSelect" class="sr-only">Krankenhaus</label>
+                    <select id="krankenhausSelect" class="rounded border-gray-300 px-2 py-1 text-sm">
+                        <option value="st-elisabeth-leipzig">St. Elisabeth Leipzig</option>
+                    </select>
+                </div>
+            </div>
             <div class="flex items-center gap-2">
                 <!-- Theme Switcher Buttons -->
                 <button id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus (Standard)">☀️</button>
@@ -205,7 +213,6 @@
     </template>
 
     <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
-    <script type="module" src="shiftTypes.js"></script>
     <script type="module" src="pdfLoader.js"></script>
     <script type="module" src="convert.js"></script>
     <script type="module" src="preview.js"></script>

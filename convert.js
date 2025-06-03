@@ -6,9 +6,7 @@
 
 // --- 1:1 Übernahme der robusten Logik aus deinem alten Script ---
 
-import { shiftTypes } from './shiftTypes.js';
-
-export function parseTimeSheet(pdfData, profession, bereich, preset) {
+export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes) {
     // pdfData kann {text: ...} oder ein String sein
     const text = typeof pdfData === 'string' ? pdfData : (pdfData && pdfData.text ? pdfData.text : '');
     const lines = text.split('\n');
@@ -65,6 +63,7 @@ export function parseTimeSheet(pdfData, profession, bereich, preset) {
                 const timeKey = `${startTime}-${endTime}`;
                 let mapping = {};
                 if (
+                    shiftTypes &&
                     shiftTypes[profession] &&
                     shiftTypes[profession][bereich] &&
                     shiftTypes[profession][bereich][preset]
