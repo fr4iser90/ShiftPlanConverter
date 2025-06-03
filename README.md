@@ -131,6 +131,38 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
    - Stelle sicher, dass Port 8080 nicht belegt ist
    - Überprüfe die Nginx-Konfiguration
 
+## Automatisierung
+
+### Tasker Integration
+Die Anwendung unterstützt die Integration mit Tasker für automatische Weckereinstellungen. Hier sind die verfügbaren Automatisierungsoptionen:
+
+#### Wecker-Automatisierung
+- Automatische Weckereinstellung basierend auf der nächsten Schicht
+- Anpassbare Vorlaufzeit vor Schichtbeginn
+- Unterstützung für verschiedene Weckzeiten je nach Schichttyp
+- Möglichkeit, Wecker für Bereitschaftsdienste zu konfigurieren
+
+#### Tasker Flows
+1. **Standard Wecker-Flow**
+   - Weckt 1 Stunde vor Schichtbeginn
+   - Automatische Stummschaltung nach Weckzeit
+   - Benachrichtigung über nächste Schicht
+
+2. **Bereitschafts-Flow**
+   - Spezielle Weckzeiten für Bereitschaftsdienste
+   - Automatische Benachrichtigung bei Dienstbeginn
+   - Status-Updates während des Dienstes
+
+3. **Urlaubs-Flow**
+   - Automatische Deaktivierung von Weckern während des Urlaubs
+   - Benachrichtigung vor Urlaubsende
+
+#### Einrichtung
+1. Installiere Tasker auf deinem Android-Gerät
+2. Importiere die bereitgestellten Tasker-Profile
+3. Passe die Weckzeiten und Benachrichtigungen nach Bedarf an
+4. Aktiviere die Automatisierung in den Anwendungseinstellungen
+
 ## Lizenz
 
 MIT License 
