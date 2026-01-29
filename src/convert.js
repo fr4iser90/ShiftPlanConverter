@@ -139,12 +139,25 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
 }
 
 export function convertParsedEntriesToCSV(entries) {
-    let csv = "Code,Start,Ende\n";
+    let csv = "Datum,Code,Start,Ende\n";
     entries.forEach(entry => {
+        let displayDate = entry.date || '';
+        if (displayDate) {
+            try {
+                const dateObj = new Date(displayDate);
+                displayDate = dateObj.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                // Fallback auf Original
+            }
+        }
         if (entry.allDay) {
-            csv += `${entry.type},,\n`;
+            csv += `${displayDate},${entry.type},,\n`;
         } else {
-            csv += `${entry.type},${entry.start},${entry.end}\n`;
+            csv += `${displayDate},${entry.type},${entry.start},${entry.end}\n`;
         }
     });
     return csv;

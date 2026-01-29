@@ -27,9 +27,22 @@ export function renderPreview(entries) {
             <tbody>
     `;
     entries.forEach(entry => {
+        let displayDate = entry.date || '';
+        if (displayDate) {
+            try {
+                const dateObj = new Date(displayDate);
+                displayDate = dateObj.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+            } catch (e) {
+                console.error("Fehler beim Formatieren des Datums:", e);
+            }
+        }
         html += `
             <tr>
-                <td class="border px-2 py-1">${entry.date || ''}</td>
+                <td class="border px-2 py-1">${displayDate}</td>
                 <td class="border px-2 py-1">${entry.type || ''}</td>
                 <td class="border px-2 py-1">${entry.allDay ? '' : (entry.start || '')}</td>
                 <td class="border px-2 py-1">${entry.allDay ? '' : (entry.end || '')}</td>
