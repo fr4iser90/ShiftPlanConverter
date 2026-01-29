@@ -68,11 +68,8 @@ function saveUserMapping(presets) {
 }
 
 function getUserMapping() {
-    const key = getUserMappingKey();
-    if (key) {
-        const stored = localStorage.getItem(key);
-        return stored ? JSON.parse(stored) : null;
-    }
+    // Wir geben immer null zurück, damit die Struktur IMMER frisch aus den JSONs geladen wird.
+    // Das verhindert Cache-Probleme bei Änderungen an der Krankenhaus-Struktur.
     return null;
 }
 
@@ -98,31 +95,28 @@ function setupDropdownListeners() {
     const bereichSelect = document.getElementById('bereichSelect');
     const presetSelect = document.getElementById('presetSelect');
 
-    // Entferne alte Listener falls vorhanden (durch Klonen)
-    const newProfessionSelect = professionSelect.cloneNode(true);
-    professionSelect.parentNode.replaceChild(newProfessionSelect, professionSelect);
+    if (!professionSelect || !bereichSelect) return;
+
+    const handleChange = async (e) => {
+        console.log("Dropdown geändert:", e.target.id, e.target.value);
+        if (e.target.id === 'professionSelect') {
+            await updateAreaOptions();
+            await updatePresetOptions();
+        } else if (e.target.id === 'bereichSelect') {
+            await loadCurrentMapping();
+            await updatePresetOptions();
+        }
+        renderShiftTypesList(getCurrentShiftTypes());
+    };
+
+    professionSelect.onchange = handleChange;
+    professionSelect.oninput = handleChange;
     
-    const newBereichSelect = bereichSelect.cloneNode(true);
-    bereichSelect.parentNode.replaceChild(newBereichSelect, bereichSelect);
-
-    newProfessionSelect.addEventListener('change', async () => {
-        console.log("Berufsgruppe geändert:", newProfessionSelect.value);
-        await updateAreaOptions();
-        await updatePresetOptions();
-        renderShiftTypesList(getCurrentShiftTypes());
-    });
-
-    newBereichSelect.addEventListener('change', async () => {
-        console.log("Bereich geändert:", newBereichSelect.value);
-        await loadCurrentMapping();
-        await updatePresetOptions();
-        renderShiftTypesList(getCurrentShiftTypes());
-    });
+    bereichSelect.onchange = handleChange;
+    bereichSelect.oninput = handleChange;
 
     if (presetSelect) {
-        presetSelect.addEventListener('change', () => {
-            renderShiftTypesList(getCurrentShiftTypes());
-        });
+        presetSelect.onchange = () => renderShiftTypesList(getCurrentShiftTypes());
     }
 }
 
@@ -134,7 +128,7 @@ function updateGroupOptions() {
     currentHospitalConfig.groups.forEach(group => {
         const opt = document.createElement('option');
         opt.value = group.id;
-        opt.textContent = group.label;
+        opt.textContent = group.label || group.id;
         professionSelect.appendChild(opt);
     });
 }
@@ -352,34 +346,45 @@ function renderShiftTypesList(currentShiftTypes) {
 
 initPDFLoad({
     onPdfLoaded: (arrayBuffer, file) => {
+        const previewContent = document.getElementById('previewContent');
+        if (previewContent) {
+            previewContent.innerHTML = '<div class="flex items-center gap-2 text-blue-600"><span class="animate-spin">⏳</span> PDF wird analysiert...</div>';
+        }
+
         window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise.then(async function(pdf) {
             let pdfText = '';
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
                 const page = await pdf.getPage(pageNum);
                 let pageText = '';
-                if (typeof page.getText === 'function') {
-                    try { pageText = await page.getText(); } catch (e) { pageText = ''; }
-                }
-                if (!pageText) {
+                try {
                     const textContent = await page.getTextContent();
-                    let lastY = null;
-                    let line = [];
-                    let lines = [];
-                    textContent.items.forEach(item => {
-                        if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
-                            lines.push(line.join(' '));
-                            line = [];
-                        }
-                        line.push(item.str);
-                        lastY = item.transform[5];
-                    });
-                    if (line.length) lines.push(line.join(' '));
-                    pageText = lines.join('\n');
+                    if (textContent.items.length > 0) {
+                        let lastY = null;
+                        let line = [];
+                        let lines = [];
+                        textContent.items.forEach(item => {
+                            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+                                lines.push(line.join(' '));
+                                line = [];
+                            }
+                            line.push(item.str);
+                            lastY = item.transform[5];
+                        });
+                        if (line.length) lines.push(line.join(' '));
+                        pageText = lines.join('\n');
+                    }
+                } catch (e) {
+                    console.warn('Fehler bei Extraktion auf Seite ' + pageNum, e);
                 }
                 pdfText += (pdfText ? '\n' : '') + pageText;
             }
 
-            // Debug-Daten speichern
+            if (!pdfText.trim()) {
+                alert("Fehler: Es konnte kein Text aus dem PDF gelesen werden.");
+                if (previewContent) previewContent.innerHTML = '<div class="text-red-500">Fehler: PDF leer oder Bild.</div>';
+                return;
+            }
+
             lastRawText = pdfText;
             const rawTextOutput = document.getElementById('rawTextOutput');
             if (rawTextOutput) rawTextOutput.textContent = pdfText;
@@ -388,50 +393,45 @@ initPDFLoad({
 
             const presetSelect = document.getElementById('presetSelect');
             const preset = presetSelect ? presetSelect.value : '';
-
-            const legacyFormatShiftTypes = {}; 
             const profession = document.getElementById('professionSelect')?.value;
             const bereich = document.getElementById('bereichSelect')?.value;
             
+            const legacyFormatShiftTypes = {}; 
             if (profession && bereich && currentMapping) {
                 legacyFormatShiftTypes[profession] = { [bereich]: currentMapping.presets };
             }
 
             const parsed = parseTimeSheet(pdfText, profession, bereich, preset, legacyFormatShiftTypes);
-            const csv = convertParsedEntriesToCSV(parsed.entries);
-
-            try {
-                localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-            } catch (e) {
-                console.warn('Konnte parsedEntries nicht in localStorage speichern:', e);
-            }
-
+            localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
             renderPreview(parsed.entries);
-
-            const downloadBtn = document.getElementById('downloadBtn');
-            if (downloadBtn) {
-                downloadBtn.style.display = '';
-                downloadBtn.disabled = false;
-                downloadBtn.onclick = function() {
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'dienstplan.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 0);
-                };
-            }
 
             ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
                     btn.disabled = false;
                     btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btn.onclick = (e) => {
+                        const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+                        if (!entries || entries.length === 0) {
+                            e.preventDefault();
+                            alert('Bitte zuerst einen Dienstplan konvertieren!');
+                        } else if (id === 'icsExportBtn') {
+                            exportToICS();
+                        } else if (id === 'downloadBtn') {
+                            const csv = convertParsedEntriesToCSV(entries);
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'dienstplan.csv';
+                            document.body.appendChild(a);
+                            a.click();
+                            setTimeout(() => {
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }, 0);
+                        }
+                    };
                 }
             });
         });
@@ -444,32 +444,20 @@ window.addEventListener('DOMContentLoaded', () => {
     if (anonymizeBtn) {
         anonymizeBtn.addEventListener('click', () => {
             let anonymized = lastRawText
-                // 1. Adressblöcke (Herrn/Frau + Name + Straße + PLZ/Ort)
                 .replace(/(Herrn|Frau)[\s\S]{1,100}?\d{5}\s+[A-ZÄÖÜ][a-zäöüß]+/g, "[ADRESSE ANONYMISIERT]")
-                
-                // 2. Spezifische Header-Daten
                 .replace(/Personalschlüssel\s+\S+/g, "Personalschlüssel [ANONYMISIERT]")
                 .replace(/Kostenstelle\s+\d+/g, "Kostenstelle [ANONYMISIERT]")
-                
-                // 3. Namen am Zeilenanfang (Vor- und Nachname)
                 .replace(/^[A-ZÄÖÜ][a-zäöüß]+(\s+[A-ZÄÖÜ][a-zäöüß]+){1,2}$/gm, "[NAME ANONYMISIERT]")
-                
-                // 4. Straßennamen (Straße + Hausnummer)
                 .replace(/[A-ZÄÖÜ][a-zäöüß]+-?\s*str\.\s*\d+/gi, "[STRASSE ANONYMISIERT]")
                 .replace(/[A-ZÄÖÜ][a-zäöüß]+\s*Straße\s*\d+/gi, "[STRASSE ANONYMISIERT]")
-                
-                // 5. Alle verbleibenden langen Zahlenketten (IDs, Telefonnummern, etc.)
                 .replace(/\d{5,}/g, "[ZAHL ANONYMISIERT]");
             
             document.getElementById('rawTextOutput').textContent = anonymized;
-            
-            // E-Mail & Copy Button anzeigen
             const sendBtn = document.getElementById('sendToMaintainerBtn');
             const copyBtn = document.getElementById('copyToClipboardBtn');
             if (sendBtn) sendBtn.style.display = 'inline-flex';
             if (copyBtn) copyBtn.style.display = 'inline-flex';
-            
-            alert("Sicherheits-Filter angewendet! Bitte prüfe den Text trotzdem kurz auf verbliebene private Daten.");
+            alert("Sicherheits-Filter angewendet!");
         });
     }
 
@@ -481,9 +469,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 const originalText = copyToClipboardBtn.innerHTML;
                 copyToClipboardBtn.innerHTML = '<span>Kopiert!</span>';
                 setTimeout(() => { copyToClipboardBtn.innerHTML = originalText; }, 2000);
-            }).catch(err => {
-                console.error('Fehler beim Kopieren:', err);
-                alert('Fehler beim Kopieren in die Zwischenablage.');
             });
         });
     }
@@ -494,62 +479,19 @@ window.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const content = document.getElementById('rawTextOutput').textContent;
             const subject = encodeURIComponent("Dienstplan-Struktur [ShiftPlanConverter]");
-            const body = encodeURIComponent("Hallo,\n\nhier ist die anonymisierte Struktur meines Dienstplans zur Verbesserung des Parsers:\n\n---\n" + content + "\n---");
+            const body = encodeURIComponent("Hallo,\n\nhier ist die anonymisierte Struktur meines Dienstplans:\n\n---\n" + content + "\n---");
             window.location.href = `mailto:${MAINTAINER_EMAIL}?subject=${subject}&body=${body}`;
-        });
-    }
-
-    const clearDebugBtn = document.getElementById('clearDebugBtn');
-    if (clearDebugBtn) {
-        clearDebugBtn.addEventListener('click', () => {
-            lastRawText = "";
-            document.getElementById('rawTextOutput').textContent = "";
-            document.getElementById('debugArea').style.display = 'none';
-            alert("Analyse-Daten wurden aus dem Speicher gelöscht.");
-        });
-    }
-
-    const downloadDebugBtn = document.getElementById('downloadDebugBtn');
-    if (downloadDebugBtn) {
-        downloadDebugBtn.addEventListener('click', () => {
-            const content = document.getElementById('rawTextOutput').textContent;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'debug_info.txt';
-            a.click();
-            URL.revokeObjectURL(url);
         });
     }
 
     const editBtn = document.getElementById('editShiftTypesBtn');
     if (editBtn) {
         editBtn.addEventListener('click', () => {
-            if (isEditMode) {
-                saveUserMapping(currentMapping.presets);
-            }
+            if (isEditMode) saveUserMapping(currentMapping.presets);
             isEditMode = !isEditMode;
             renderShiftTypesList(getCurrentShiftTypes());
         });
     }
-
-    ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
-        const btn = document.getElementById(id);
-        if (btn) {
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            btn.addEventListener('click', (e) => {
-                const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
-                if (!entries || entries.length === 0) {
-                    e.preventDefault();
-                    alert('Bitte zuerst einen Dienstplan konvertieren!');
-                } else if (id === 'icsExportBtn') {
-                    exportToICS(entries);
-                }
-            });
-        }
-    });
 
     const krankenhausSelect = document.getElementById('krankenhausSelect');
     if (krankenhausSelect) {
@@ -564,49 +506,34 @@ window.addEventListener('DOMContentLoaded', () => {
     const bereichSelect = document.getElementById('bereichSelect');
     const presetSelect = document.getElementById('presetSelect');
 
+    const handleProfessionChange = async () => {
+        await updateAreaOptions();
+        await updatePresetOptions();
+        renderShiftTypesList(getCurrentShiftTypes());
+    };
+
+    const handleBereichChange = async () => {
+        await loadCurrentMapping();
+        await updatePresetOptions();
+        renderShiftTypesList(getCurrentShiftTypes());
+    };
+
     if (professionSelect) {
-        professionSelect.addEventListener('change', async () => {
-            await updateAreaOptions();
-            await updatePresetOptions();
-            renderShiftTypesList(getCurrentShiftTypes());
-        });
+        professionSelect.addEventListener('change', handleProfessionChange);
+        professionSelect.addEventListener('input', handleProfessionChange);
     }
     if (bereichSelect) {
-        bereichSelect.addEventListener('change', async () => {
-            await loadCurrentMapping();
-            await updatePresetOptions();
-            renderShiftTypesList(getCurrentShiftTypes());
-        });
+        bereichSelect.addEventListener('change', handleBereichChange);
+        bereichSelect.addEventListener('input', handleBereichChange);
     }
+    if (presetSelect) {
+        presetSelect.addEventListener('change', () => renderShiftTypesList(getCurrentShiftTypes()));
+    }
+
     reloadHospitalAndUI();
     initGoogleCalendar();
 
-    // Tab-Logic für Kalender-Integration
-    const tabs = {
-        'Google': { tab: document.getElementById('tabGoogle'), content: document.getElementById('contentGoogle') },
-        'Outlook': { tab: document.getElementById('tabOutlook'), content: document.getElementById('contentOutlook') },
-        'Apple': { tab: document.getElementById('tabApple'), content: document.getElementById('contentApple') }
-    };
-
-    Object.entries(tabs).forEach(([name, elements]) => {
-        if (elements.tab) {
-            elements.tab.addEventListener('click', () => {
-                // Alle Tabs zurücksetzen
-                Object.values(tabs).forEach(e => {
-                    if (e.tab && e.content) {
-                        e.tab.classList.remove('bg-white', 'text-blue-600', 'font-bold');
-                        e.tab.classList.add('bg-gray-50', 'text-gray-500', 'font-medium');
-                        e.content.classList.add('hidden');
-                    }
-                });
-                // Aktiven Tab setzen
-                elements.tab.classList.remove('bg-gray-50', 'text-gray-500', 'font-medium');
-                elements.tab.classList.add('bg-white', 'text-blue-600', 'font-bold');
-                elements.content.classList.remove('hidden');
-            });
-        }
-    });
-
+    // Hilfe-Modal Logik
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');
     const closeHelpModal = document.getElementById('closeHelpModal');
@@ -616,20 +543,40 @@ window.addEventListener('DOMContentLoaded', () => {
         helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
     }
 
+    // Tab-Logic
+    const tabs = {
+        'Google': { tab: document.getElementById('tabGoogle'), content: document.getElementById('contentGoogle') },
+        'Outlook': { tab: document.getElementById('tabOutlook'), content: document.getElementById('contentOutlook') },
+        'Apple': { tab: document.getElementById('tabApple'), content: document.getElementById('contentApple') }
+    };
+
+    Object.entries(tabs).forEach(([name, elements]) => {
+        if (elements.tab) {
+            elements.tab.addEventListener('click', () => {
+                Object.values(tabs).forEach(e => {
+                    if (e.tab && e.content) {
+                        e.tab.classList.remove('bg-white', 'text-blue-600', 'font-bold');
+                        e.tab.classList.add('bg-gray-50', 'text-gray-500', 'font-medium');
+                        e.content.classList.add('hidden');
+                    }
+                });
+                elements.tab.classList.remove('bg-gray-50', 'text-gray-500', 'font-medium');
+                elements.tab.classList.add('bg-white', 'text-blue-600', 'font-bold');
+                elements.content.classList.remove('hidden');
+            });
+        }
+    });
+
     const body = document.body;
     function setTheme(theme) {
         body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
         if (theme) body.classList.add(theme);
         localStorage.setItem('theme', theme);
     }
-    const savedTheme = localStorage.getItem('theme') || 'theme-light';
-    setTheme(savedTheme);
+    setTheme(localStorage.getItem('theme') || 'theme-light');
 
     ['themeLightBtn', 'themeDarkBtn', 'themeSepiaBtn'].forEach(id => {
         const btn = document.getElementById(id);
-        if (btn) {
-            const theme = id.replace('Btn', '').replace('theme', 'theme-').toLowerCase();
-            btn.addEventListener('click', () => setTheme(theme));
-        }
+        if (btn) btn.addEventListener('click', () => setTheme(id.replace('Btn', '').replace('theme', 'theme-').toLowerCase()));
     });
 });

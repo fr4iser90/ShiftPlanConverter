@@ -122,6 +122,22 @@
           "mapping": "mappings/aerzte-op.json"
         }
       ]
-    }
+    },
+    {
+      "id": "service",
+      "label": "Servicekräfte",
+      "areas": [
+        {
+          "id": "service-stationen",
+          "label": "Stationsservice",
+          "mapping": "mappings/service-stationen.json"
+        },
+        {
+          "id": "service-op",
+          "label": "OP-Service",
+          "mapping": "mappings/service-op.json"
+        }
+      ]
+    }    
   ]
 }
