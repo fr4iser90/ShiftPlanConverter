@@ -9,10 +9,12 @@
     "M3": "#93c5fd",
     "B36": "#f87171",
     "B38": "#dc2626",
-    "MO": "#8b5cf6"
+    "MO": "#8b5cf6",
+    "OP": "#f97316",
+    "OP-N": "#ea580c"
   },
   "presets": {
-    "standard": {
+    "Anästhesie": {
       "07:35-15:50": { "code": "F", "label": "Frühdienst", "type": "work", "isValidated": true },
       "08:30-16:45": { "code": "F1", "type": "work", "isValidated": true },
       "09:00-17:15": { "code": "F2", "type": "work", "isValidated": true },
@@ -23,6 +25,20 @@
       "07:35-19:35": { "code": "B36", "type": "long", "isValidated": true },
       "19:50-07:35": { "code": "B38", "type": "night", "isValidated": true },
       "11:35-07:35": { "code": "MO", "type": "oncall", "isValidated": true }
+    },
+    "OP-Pflege": {
+      "07:00-15:30": { "code": "F", "isValidated": false },
+      "07:30-16:00": { "code": "F1", "isValidated": false },
+      "08:00-16:30": { "code": "F2", "isValidated": false },
+      "08:30-17:00": { "code": "F3", "isValidated": false },
+      "09:00-17:30": { "code": "M1", "isValidated": false },
+      "10:00-18:30": { "code": "M2", "isValidated": false },
+      "11:00-19:30": { "code": "M3", "isValidated": false },
+      "07:00-19:00": { "code": "B36", "isValidated": false },
+      "19:00-07:00": { "code": "B38", "isValidated": false },
+      "11:00-07:00": { "code": "MO", "isValidated": false },
+      "08:00-20:00": { "code": "OP", "isValidated": false },
+      "20:00-08:00": { "code": "OP-N", "isValidated": false }
     }
   }
 }
