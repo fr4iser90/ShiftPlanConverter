@@ -26,7 +26,7 @@ function getShiftColors() {
     
     const mappingColors = currentMapping?.colors || {};
     
-    return {
+    const allColors = {
         'N': '#ef4444', 
         'F': '#22c55e', 
         'S': '#eab308', 
@@ -34,6 +34,12 @@ function getShiftColors() {
         ...mappingColors,
         ...storedColors
     };
+
+    // WICHTIG: Synchronisiere allColors zurück in den localStorage, 
+    // damit andere Module (wie Google Sync) darauf zugreifen können.
+    localStorage.setItem('shiftColors', JSON.stringify(allColors));
+    
+    return allColors;
 }
 
 function saveShiftColor(code, color) {
@@ -233,19 +239,40 @@ function renderShiftTypesList(currentShiftTypes) {
             const code = typeof value === 'object' ? value.code : value;
             const row = document.createElement('div');
             row.className = "flex items-center gap-2 bg-gray-50 p-1 rounded border";
+            
+            // Google Event Colors Palette
+            const googleColors = {
+                "1": "#a4bdfc", "2": "#7ae7bf", "3": "#dbadff", "4": "#ff887c",
+                "5": "#fbd75b", "6": "#ffb878", "7": "#46d6db", "8": "#e1e1e1",
+                "9": "#5484ed", "10": "#51b749", "11": "#dc2127"
+            };
+            
+            const currentColor = colors[code] || '#3b82f6';
+            
             row.innerHTML = `
                 <input type="text" class="edit-time w-24 text-xs border rounded px-1" value="${timeRange}">
                 <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold" value="${code}">
-                <input type="color" class="w-6 h-6 p-0 border-none bg-transparent cursor-pointer" value="${colors[code] || '#3b82f6'}">
+                <div class="flex items-center gap-1 flex-1 overflow-x-auto pb-1">
+                    ${Object.entries(googleColors).map(([id, hex]) => `
+                        <button type="button" 
+                                class="color-swatch w-5 h-5 rounded-full border-2 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'border-black' : 'border-transparent'}" 
+                                style="background-color: ${hex}" 
+                                data-color="${hex}" 
+                                title="Google Color ${id}">
+                        </button>
+                    `).join('')}
+                    <input type="color" class="w-5 h-5 p-0 border-none bg-transparent cursor-pointer ml-1" value="${currentColor}" title="Custom Hex">
+                </div>
                 <button class="delete-shift text-red-500 hover:text-red-700 px-1">✕</button>
             `;
             
             const timeInput = row.querySelector('.edit-time');
             const codeInput = row.querySelector('.edit-code');
             const colorPicker = row.querySelector('input[type="color"]');
+            const swatches = row.querySelectorAll('.color-swatch');
             const deleteBtn = row.querySelector('.delete-shift');
             
-            const updateLocal = () => {
+            const updateLocal = (newColor) => {
                 const newTime = timeInput.value;
                 const newCode = codeInput.value;
                 if (newTime !== timeRange) {
@@ -255,12 +282,21 @@ function renderShiftTypesList(currentShiftTypes) {
                     if (typeof value === 'object') value.code = newCode;
                     else currentShiftTypes[timeRange] = newCode;
                 }
-                saveShiftColor(newCode, colorPicker.value);
+                saveShiftColor(newCode, newColor || colorPicker.value);
             };
 
-            timeInput.addEventListener('change', updateLocal);
-            codeInput.addEventListener('change', updateLocal);
-            colorPicker.addEventListener('change', (e) => saveShiftColor(codeInput.value, e.target.value));
+            timeInput.addEventListener('change', () => updateLocal());
+            codeInput.addEventListener('change', () => updateLocal());
+            colorPicker.addEventListener('change', (e) => updateLocal(e.target.value));
+            
+            swatches.forEach(swatch => {
+                swatch.addEventListener('click', () => {
+                    swatches.forEach(s => s.classList.replace('border-black', 'border-transparent'));
+                    swatch.classList.replace('border-transparent', 'border-black');
+                    updateLocal(swatch.dataset.color);
+                });
+            });
+
             deleteBtn.addEventListener('click', () => {
                 delete currentShiftTypes[timeRange];
                 renderShiftTypesList(currentShiftTypes);
@@ -391,7 +427,7 @@ initPDFLoad({
                 };
             }
 
-            ['icsExportBtn', 'syncBtn'].forEach(id => {
+            ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
                     btn.disabled = false;
@@ -427,13 +463,28 @@ window.addEventListener('DOMContentLoaded', () => {
             
             document.getElementById('rawTextOutput').textContent = anonymized;
             
-            // E-Mail Button anzeigen
+            // E-Mail & Copy Button anzeigen
             const sendBtn = document.getElementById('sendToMaintainerBtn');
-            if (sendBtn) {
-                sendBtn.style.display = 'inline-flex';
-            }
+            const copyBtn = document.getElementById('copyToClipboardBtn');
+            if (sendBtn) sendBtn.style.display = 'inline-flex';
+            if (copyBtn) copyBtn.style.display = 'inline-flex';
             
             alert("Sicherheits-Filter angewendet! Bitte prüfe den Text trotzdem kurz auf verbliebene private Daten.");
+        });
+    }
+
+    const copyToClipboardBtn = document.getElementById('copyToClipboardBtn');
+    if (copyToClipboardBtn) {
+        copyToClipboardBtn.addEventListener('click', () => {
+            const content = document.getElementById('rawTextOutput').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                const originalText = copyToClipboardBtn.innerHTML;
+                copyToClipboardBtn.innerHTML = '<span>Kopiert!</span>';
+                setTimeout(() => { copyToClipboardBtn.innerHTML = originalText; }, 2000);
+            }).catch(err => {
+                console.error('Fehler beim Kopieren:', err);
+                alert('Fehler beim Kopieren in die Zwischenablage.');
+            });
         });
     }
 
@@ -442,7 +493,7 @@ window.addEventListener('DOMContentLoaded', () => {
         sendToMaintainerBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const content = document.getElementById('rawTextOutput').textContent;
-            const subject = encodeURIComponent("Dienstplan-Struktur Spende");
+            const subject = encodeURIComponent("Dienstplan-Struktur [ShiftPlanConverter]");
             const body = encodeURIComponent("Hallo,\n\nhier ist die anonymisierte Struktur meines Dienstplans zur Verbesserung des Parsers:\n\n---\n" + content + "\n---");
             window.location.href = `mailto:${MAINTAINER_EMAIL}?subject=${subject}&body=${body}`;
         });
@@ -483,7 +534,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    ['icsExportBtn', 'syncBtn'].forEach(id => {
+    ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
             btn.disabled = true;
@@ -529,6 +580,32 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     reloadHospitalAndUI();
     initGoogleCalendar();
+
+    // Tab-Logic für Kalender-Integration
+    const tabs = {
+        'Google': { tab: document.getElementById('tabGoogle'), content: document.getElementById('contentGoogle') },
+        'Outlook': { tab: document.getElementById('tabOutlook'), content: document.getElementById('contentOutlook') },
+        'Apple': { tab: document.getElementById('tabApple'), content: document.getElementById('contentApple') }
+    };
+
+    Object.entries(tabs).forEach(([name, elements]) => {
+        if (elements.tab) {
+            elements.tab.addEventListener('click', () => {
+                // Alle Tabs zurücksetzen
+                Object.values(tabs).forEach(e => {
+                    if (e.tab && e.content) {
+                        e.tab.classList.remove('bg-white', 'text-blue-600', 'font-bold');
+                        e.tab.classList.add('bg-gray-50', 'text-gray-500', 'font-medium');
+                        e.content.classList.add('hidden');
+                    }
+                });
+                // Aktiven Tab setzen
+                elements.tab.classList.remove('bg-gray-50', 'text-gray-500', 'font-medium');
+                elements.tab.classList.add('bg-white', 'text-blue-600', 'font-bold');
+                elements.content.classList.remove('hidden');
+            });
+        }
+    });
 
     const helpBtn = document.getElementById('helpBtn');
     const helpModal = document.getElementById('helpModal');

@@ -219,7 +219,11 @@ async function syncToCalendar(calendarId) {
         }
 
         let successCount = 0;
-        const colors = JSON.parse(localStorage.getItem('shiftColors') || '{}');
+        
+        // Farben aus localStorage ODER aus der aktuellen Konfiguration laden
+        const storedColors = JSON.parse(localStorage.getItem('shiftColors') || '{}');
+        // Wir versuchen, die Farben so zu laden, wie sie in der UI angezeigt werden
+        const colors = { ...storedColors };
 
         for (const entry of entries) {
             // Titel: Code + Zeit (falls vorhanden)
@@ -263,10 +267,11 @@ async function syncToCalendar(calendarId) {
 
             // Farbe hinzufügen, falls vorhanden
             if (colors[entry.type]) {
-                // Google Calendar nutzt colorId (1-11). 
-                // Wir mappen Hex-Farben grob auf Google-Farben oder lassen es bei der Standardfarbe,
-                // da Google keine beliebigen Hex-Farben pro Event via API ohne colorId erlaubt.
-                // Für jetzt lassen wir es bei der UI-Vorschau, da colorId-Mapping komplex ist.
+                const hex = colors[entry.type];
+                const googleColorId = mapHexToGoogleColorId(hex);
+                if (googleColorId) {
+                    event.colorId = googleColorId;
+                }
             }
 
             await insertEvent(calendarId, event);
@@ -281,4 +286,86 @@ async function syncToCalendar(calendarId) {
         syncBtn.disabled = false;
         syncBtn.textContent = 'Mit Kalender synchronisieren';
     }
+}
+
+/**
+ * Mappt eine Hex-Farbe auf die ähnlichste Google Calendar Color ID (1-11).
+ * @param {string} hex 
+ * @returns {string|null} colorId
+ */
+function mapHexToGoogleColorId(hex) {
+    if (!hex) return null;
+    
+    // Google Event Colors (from API)
+    const googleColors = {
+        "1": "#a4bdfc",  // Lavendel
+        "2": "#7ae7bf",  // Salbei
+        "3": "#dbadff",  // Traube
+        "4": "#ff887c",  // Flamingo
+        "5": "#fbd75b",  // Banane
+        "6": "#ffb878",  // Mandarine
+        "7": "#46d6db",  // Pfau
+        "8": "#e1e1e1",  // Graphit
+        "9": "#5484ed",  // Heidelbeere
+        "10": "#51b749", // Basilikum
+        "11": "#dc2127"  // Tomate
+    };
+
+    // Einfaches Mapping für bekannte Standard-Hex-Werte oder Distanzberechnung
+    const target = hex.toLowerCase();
+    
+    // 1. Direkte Treffer (falls der Nutzer eine Google-Farbe gewählt hat)
+    for (const [id, gHex] of Object.entries(googleColors)) {
+        if (gHex.toLowerCase() === target) return id;
+    }
+
+    // 2. Heuristik für typische Dienstplan-Farben
+    // Grüntöne (Frühschicht)
+    if (target.match(/#(22c55e|4ade80|86efac|bbf7d0|51b749|2ecc71|27ae60)/)) return "10"; 
+    // Gelbtöne (Spätschicht)
+    if (target.match(/#(eab308|facc15|fef08a|fbd75b|f1c40f|f39c12)/)) return "5";
+    // Blautöne (Mittelschicht)
+    if (target.match(/#(3b82f6|60a5fa|93c5fd|5484ed|3498db|2980b9)/)) return "9";
+    // Rottöne (Nachtschicht)
+    if (target.match(/#(ef4444|f87171|dc2626|dc2127|e74c3c|c0392b)/)) return "11";
+    // Lila (Spezial)
+    if (target.match(/#(8b5cf6|a78bfa|dbadff|9b59b6|8e44ad)/)) return "3";
+
+    // 3. Fallback: Distanzberechnung (Euklidisch im RGB-Raum)
+    return findClosestColor(target, googleColors);
+}
+
+function findClosestColor(targetHex, palette) {
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : null;
+    };
+
+    const targetRgb = hexToRgb(targetHex);
+    if (!targetRgb) return null;
+
+    let minDistance = Infinity;
+    let closestId = null;
+
+    for (const [id, hex] of Object.entries(palette)) {
+        const rgb = hexToRgb(hex);
+        if (!rgb) continue;
+        
+        const distance = Math.sqrt(
+            Math.pow(targetRgb.r - rgb.r, 2) +
+            Math.pow(targetRgb.g - rgb.g, 2) +
+            Math.pow(targetRgb.b - rgb.b, 2)
+        );
+
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestId = id;
+        }
+    }
+
+    return closestId;
 }
