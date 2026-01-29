@@ -1,6 +1,6 @@
 /**
  * shiftTypesLoader.js
- * Lädt die Krankenhaus-Konfiguration und die zugehörigen Schicht-Mappings.
+ * Lädt die Krankenhaus-Konfiguration, Schicht-Mappings und Parser.
  */
 
 /**
@@ -30,4 +30,22 @@ export async function loadMapping(krankenhaus, mappingPath) {
     throw new Error(`Konnte Mapping ${mappingPath} nicht laden: ${response.statusText}`);
   }
   return await response.json();
+}
+
+/**
+ * Lädt den spezifischen Parser für ein Krankenhaus.
+ * @param {string} krankenhaus - z.B. "st-elisabeth-leipzig"
+ * @returns {Promise<Function|null>} - Die Parser-Funktion
+ */
+export async function loadHospitalParser(krankenhaus) {
+  try {
+    const module = await import(`../krankenhaeuser/${krankenhaus}/parser.js`);
+    // Wir suchen nach einer exportierten Funktion, die "parse" im Namen hat oder die einzige Export-Funktion ist
+    if (module.parseStElisabeth) return module.parseStElisabeth;
+    if (module.default) return module.default;
+    return Object.values(module).find(f => typeof f === 'function');
+  } catch (e) {
+    console.warn(`Kein spezifischer Parser für ${krankenhaus} gefunden, nutze Standard.`, e);
+    return null;
+  }
 }

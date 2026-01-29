@@ -1,132 +1,52 @@
 /**
  * convert.js
- * Enthält die Parsing- und Konvertierungslogik für den Dienstplan.
- * Exportiert parseTimeSheet und convertParsedEntriesToCSV.
+ * Enthält die Logik zur Veredelung der geparsten Daten.
+ * Verknüpft Rohdaten mit Mappings und führt Dienste zusammen.
  */
 
-// --- 1:1 Übernahme der robusten Logik aus deinem alten Script ---
-
-export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes) {
-    // pdfData kann {text: ...} oder ein String sein
-    const text = typeof pdfData === 'string' ? pdfData : (pdfData && pdfData.text ? pdfData.text : '');
-    const lines = text.split('\n');
-    const mainEntries = [];
-    const bereitschaftEntries = [];
-    let currentYear = '';
-    let currentMonth = '';
-
-    // Regex patterns (tolerant, wie im alten Script)
-    const monthYearRegex = /Abrechnungsmonat\s+(\d{2})\/(\d{4})/;
-    const shiftRegex = /^\s*(\d{2})\s+\w+\s+KO\*\s+(\d{2}:\d{2})\s+GE\*\s+(\d{2}:\d{2})/;
-    const vacationRegex = /^\s*(\d{2})\s+\w+\s+URLTV/;
-    const holidayRegex = /^\s*(\d{2})\s+\w+\*?\s+FEIER/;
-    const onCallBereitschaftRegex = /^\s*(\d{2}\.\d{2}\.\d{4})\s+.*?(\d{2}:\d{2})\s+(\d{2}:\d{2})/;
-    const bereitSectioRegex = /Bereitschaftsdienste/;
-
-    let inBereitschaftSection = false;
-
-    // --- Pass 1: Extract month/year and populate initial lists ---
-    for (const line of lines) {
-        // Find month and year first
-        if (!currentYear || !currentMonth) {
-            const monthYearMatch = line.match(monthYearRegex);
-            if (monthYearMatch) {
-                currentMonth = monthYearMatch[1];
-                currentYear = monthYearMatch[2];
-            }
-        }
-
-        // Check for section change
-        if (bereitSectioRegex.test(line)) {
-            inBereitschaftSection = true;
-            continue;
-        }
-
-        if (inBereitschaftSection) {
-            const onCallMatch = line.match(onCallBereitschaftRegex);
-            if (onCallMatch) {
-                const [_, dateStr, startTime, endTime] = onCallMatch;
-                const [day, month, year] = dateStr.split('.');
-                const entryYear = year;
-                const fullDate = `${entryYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                bereitschaftEntries.push({ date: fullDate, start: startTime, end: endTime });
-            }
-        } else {
-            // Process main time log section (before Bereitschaftsdienste)
-            const shiftMatch = line.match(shiftRegex);
-            const vacationMatch = line.match(vacationRegex);
-            const holidayMatch = line.match(holidayRegex);
-
-            if (shiftMatch && currentYear && currentMonth) {
-                const [_, day, startTime, endTime] = shiftMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                const timeKey = `${startTime}-${endTime}`;
-                let mapping = {};
-                if (
-                    shiftTypes &&
-                    shiftTypes[profession] &&
-                    shiftTypes[profession][bereich] &&
-                    shiftTypes[profession][bereich][preset]
-                ) {
-                    mapping = shiftTypes[profession][bereich][preset];
-                }
-                
-                // Unterstützung für String- oder Objekt-Mappings
-                const mappingValue = mapping[timeKey];
-                let shiftType = `⚠️ ${timeKey}`;
-                let isValidated = false;
-
-                if (typeof mappingValue === 'object' && mappingValue !== null) {
-                    shiftType = mappingValue.code || shiftType;
-                    isValidated = !!mappingValue.isValidated;
-                } else if (typeof mappingValue === 'string') {
-                    shiftType = mappingValue;
-                }
-
-                mainEntries.push({ 
-                    type: shiftType, 
-                    date: date, 
-                    start: startTime, 
-                    end: endTime,
-                    isValidated: isValidated
-                });
-            } else if (vacationMatch && currentYear && currentMonth) {
-                const [_, day] = vacationMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'URLAUB', date: date, allDay: true, isValidated: true });
-            } else if (holidayMatch && currentYear && currentMonth) {
-                const [_, day] = holidayMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true, isValidated: true });
-            }
-        }
+export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMapping, parserFn) {
+    if (!parserFn) {
+        throw new Error("Kein Parser-Funktion übergeben!");
     }
 
-    if (!currentYear || !currentMonth) {
+    // 1. Roh-Daten mit dem spezifischen Parser extrahieren
+    const { year, month, mainEntries: rawMain, bereitschaftEntries: rawBereitschaft } = parserFn(pdfText);
+
+    if (!year || !month) {
         return { entries: [], year: null, month: null };
     }
 
-    // --- Pass 2: Process entries, handle merges, and build final list ---
+    const mapping = (hospitalMapping && hospitalMapping.presets && hospitalMapping.presets[preset]) || {};
     const finalEntries = [];
+    
+    // Hilfsfunktion für Datum +1
+    function addDays(dateStr, days) {
+        const d = new Date(dateStr);
+        d.setDate(d.getDate() + days);
+        return d.toISOString().split('T')[0];
+    }
+
+    // --- Pass 2: Logik zur Schichterkennung und Zusammenführung ---
     const handledMainIndices = new Set();
     const handledBereitschaftIndices = new Set();
 
-    // Dynamische Spezialdienst-Erkennung: Tagdienst + beliebig viele Bereitschaftsdienste kombinieren
-    for (let m = 0; m < mainEntries.length; m++) {
-        if (handledMainIndices.has(m)) continue;
-        const mainEntry = mainEntries[m];
+    // 2.1 Spezialdienste: Tagdienst + Bereitschaft (z.B. MO / Langdienst)
+    for (let m = 0; m < rawMain.length; m++) {
+        const mainEntry = rawMain[m];
+        if (mainEntry.allDay) continue; // Urlaub/Feiertag ignorieren
 
-        // Suche Bereitschaftsdienste, die direkt an den Tagdienst anschließen (am selben Tag)
         let chain = [mainEntry];
         let currentEnd = mainEntry.end;
         let currentDate = mainEntry.date;
 
-        // Suche alle Bereitschaftsdienste, die direkt anschließen (auch über Mitternacht)
-        for (let loop = 0; loop < 10; loop++) { // max 10er-Kette, Schutz vor Endlosschleife
+        // Suche anschließende Bereitschaftsdienste
+        for (let loop = 0; loop < 10; loop++) {
             let found = false;
-            for (let b = 0; b < bereitschaftEntries.length; b++) {
+            for (let b = 0; b < rawBereitschaft.length; b++) {
                 if (handledBereitschaftIndices.has(b)) continue;
-                const bEntry = bereitschaftEntries[b];
+                const bEntry = rawBereitschaft[b];
+                
+                // Direkt am gleichen Tag anschließend
                 if (bEntry.date === currentDate && bEntry.start === currentEnd) {
                     chain.push(bEntry);
                     currentEnd = bEntry.end;
@@ -134,7 +54,7 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                     found = true;
                     break;
                 }
-                // Über Mitternacht: Bereitschaft endet 00:00, nächster Block am Folgetag mit 00:00
+                // Über Mitternacht (00:00)
                 if (bEntry.start === '00:00' && bEntry.date === addDays(currentDate, 1) && currentEnd === '00:00') {
                     chain.push(bEntry);
                     currentEnd = bEntry.end;
@@ -148,64 +68,76 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
         }
 
         if (chain.length > 1) {
-            // Kombinierter Spezialdienst (MO, Langdienst, etc.)
+            // Kombinierter Dienst (z.B. MO)
+            const timeKey = `${mainEntry.start}-${chain[chain.length - 1].end}`;
+            const mappingValue = mapping[timeKey];
+            
+            let shiftType = mappingValue?.code || "MO"; // Fallback MO
+            let isValidated = mappingValue?.isValidated || true;
+
             finalEntries.push({
-                type: 'MO',
+                type: shiftType,
                 date: mainEntry.date,
                 start: mainEntry.start,
                 end: chain[chain.length - 1].end,
-                isValidated: true // Spezialdienste wie MO sind meist validiert
+                isValidated: isValidated
             });
             handledMainIndices.add(m);
         }
     }
 
-    // Hilfsfunktion für Datum +1
-    function addDays(dateStr, days) {
-        const d = new Date(dateStr);
-        d.setDate(d.getDate() + days);
-        return d.toISOString().split('T')[0];
-    }
+    // 2.2 Normale Schichten verarbeiten
+    for (let i = 0; i < rawMain.length; i++) {
+        if (handledMainIndices.has(i)) continue;
+        const entry = rawMain[i];
 
-    // Add any unhandled main entries
-    for (let i = 0; i < mainEntries.length; i++) {
-        if (!handledMainIndices.has(i)) {
-            finalEntries.push(mainEntries[i]);
+        if (entry.allDay) {
+            finalEntries.push({ ...entry, isValidated: true });
+            continue;
         }
-    }
 
-    // Add any unhandled Bereitschaft entries
-    for (let i = 0; i < bereitschaftEntries.length; i++) {
-        if (!handledBereitschaftIndices.has(i)) {
-            const item = bereitschaftEntries[i];
-            if (item.start === '07:35' && item.end === '19:35') {
-                finalEntries.push({
-                    type: 'B36',
-                    date: item.date,
-                    start: item.start,
-                    end: item.end,
-                    isValidated: true
-                });
-            } else {
-                finalEntries.push({
-                    type: `BEREIT_${item.start}-${item.end}`,
-                    date: item.date,
-                    start: item.start,
-                    end: item.end,
-                    isValidated: false
-                });
-            }
-            handledBereitschaftIndices.add(i);
+        const timeKey = `${entry.start}-${entry.end}`;
+        const mappingValue = mapping[timeKey];
+        
+        let shiftType = `⚠️ ${timeKey}`;
+        let isValidated = false;
+
+        if (typeof mappingValue === 'object') {
+            shiftType = mappingValue.code;
+            isValidated = !!mappingValue.isValidated;
+        } else if (typeof mappingValue === 'string') {
+            shiftType = mappingValue;
         }
+
+        finalEntries.push({
+            type: shiftType,
+            date: entry.date,
+            start: entry.start,
+            end: entry.end,
+            isValidated: isValidated
+        });
     }
 
-    // Sort final entries by date
+    // 2.3 Übrig gebliebene Bereitschaften
+    for (let i = 0; i < rawBereitschaft.length; i++) {
+        if (handledBereitschaftIndices.has(i)) continue;
+        const item = rawBereitschaft[i];
+        const timeKey = `${item.start}-${item.end}`;
+        const mappingValue = mapping[timeKey];
+
+        finalEntries.push({
+            type: mappingValue?.code || `BEREIT_${timeKey}`,
+            date: item.date,
+            start: item.start,
+            end: item.end,
+            isValidated: !!mappingValue?.isValidated
+        });
+    }
+
     finalEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-    return { entries: finalEntries, year: currentYear, month: currentMonth };
+    return { entries: finalEntries, year, month };
 }
 
-// Konvertiert Einträge in CSV
 export function convertParsedEntriesToCSV(entries) {
     let csv = "Code,Start,Ende\n";
     entries.forEach(entry => {

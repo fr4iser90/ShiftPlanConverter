@@ -3,15 +3,16 @@
  * Zentrale Steuerung der App, verbindet alle Module.
  */
 
-import { loadHospitalConfig, loadMapping } from './shiftTypesLoader.js';
+import { loadHospitalConfig, loadMapping, loadHospitalParser } from './shiftTypesLoader.js';
 import { initPDFLoad } from './pdfLoader.js';
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
-import { initGoogleCalendar } from './calendar/providers/google.js';
-import { exportToICS } from './calendar/icsGenerator.js';
+import { initGoogleCalendar } from './google.js';
+import { exportToICS } from './icsGenerator.js';
 
 let currentHospitalConfig = null;
 let currentMapping = null;
+let currentParser = null;
 let currentKrankenhaus = 'st-elisabeth-leipzig';
 const MAINTAINER_EMAIL = 'pa.boe90@gmail.com';
 let isEditMode = false;
@@ -77,6 +78,7 @@ async function reloadHospitalAndUI() {
     try {
         console.log("Initialisiere Krankenhaus:", currentKrankenhaus);
         currentHospitalConfig = await loadHospitalConfig(currentKrankenhaus);
+        currentParser = await loadHospitalParser(currentKrankenhaus);
         updateGroupOptions();
         
         // WICHTIG: Event-Listener für Dropdowns sicherstellen
@@ -396,12 +398,13 @@ initPDFLoad({
             const profession = document.getElementById('professionSelect')?.value;
             const bereich = document.getElementById('bereichSelect')?.value;
             
-            const legacyFormatShiftTypes = {}; 
-            if (profession && bereich && currentMapping) {
-                legacyFormatShiftTypes[profession] = { [bereich]: currentMapping.presets };
+            if (!currentParser) {
+                alert("Fehler: Kein Parser für dieses Krankenhaus gefunden.");
+                if (previewContent) previewContent.innerHTML = '<div class="text-red-500">Fehler: Parser fehlt.</div>';
+                return;
             }
 
-            const parsed = parseTimeSheet(pdfText, profession, bereich, preset, legacyFormatShiftTypes);
+            const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
             localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
             renderPreview(parsed.entries);
 
@@ -478,8 +481,17 @@ window.addEventListener('DOMContentLoaded', () => {
         sendToMaintainerBtn.addEventListener('click', (e) => {
             e.preventDefault();
             const content = document.getElementById('rawTextOutput').textContent;
+            
+            // Platzhalter für den Nutzer zum Ausfüllen
+            const placeholder = "Berufsgruppe/Bereich: ____________________\n\n";
+            
             const subject = encodeURIComponent("Dienstplan-Struktur [ShiftPlanConverter]");
-            const body = encodeURIComponent("Hallo,\n\nhier ist die anonymisierte Struktur meines Dienstplans:\n\n---\n" + content + "\n---");
+            const body = encodeURIComponent(
+                "Hallo,\n\n" + 
+                placeholder + 
+                "hier ist die anonymisierte Struktur meines Dienstplans:\n\n" + 
+                "---\n" + content + "\n---"
+            );
             window.location.href = `mailto:${MAINTAINER_EMAIL}?subject=${subject}&body=${body}`;
         });
     }

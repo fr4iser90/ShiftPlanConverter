@@ -99,12 +99,26 @@ button, input, select {
 
 /* === Theme Overrides für Tailwind-Klassen und wichtige Komponenten === */
 .theme-dark .bg-white,
-.theme-sepia .bg-white {
+.theme-sepia .bg-white,
+.theme-dark .bg-gray-100,
+.theme-sepia .bg-gray-100 {
   background: var(--table-bg, #fff) !important;
 }
 .theme-dark .bg-gray-50,
 .theme-sepia .bg-gray-50 {
   background: var(--bg, #fff) !important;
+}
+.theme-dark .bg-green-50,
+.theme-sepia .bg-green-50 {
+  background: rgba(34, 197, 94, 0.1) !important;
+  border-color: rgba(34, 197, 94, 0.2) !important;
+  color: var(--fg) !important;
+}
+.theme-dark .bg-blue-50,
+.theme-sepia .bg-blue-50 {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+  color: var(--fg) !important;
 }
 .theme-dark .bg-gray-200,
 .theme-sepia .bg-gray-200 {
@@ -131,7 +145,11 @@ button, input, select {
   color: var(--fg, #222) !important;
 }
 .theme-dark .text-gray-700,
-.theme-sepia .text-gray-700 {
+.theme-sepia .text-gray-700,
+.theme-dark .text-green-700,
+.theme-sepia .text-green-700,
+.theme-dark .text-red-700,
+.theme-sepia .text-red-700 {
   color: var(--fg, #222) !important;
 }
 .theme-dark .text-gray-500,
