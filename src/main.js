@@ -543,30 +543,6 @@ window.addEventListener('DOMContentLoaded', () => {
         helpModal.addEventListener('click', (e) => { if (e.target === helpModal) helpModal.style.display = 'none'; });
     }
 
-    // Tab-Logic
-    const tabs = {
-        'Google': { tab: document.getElementById('tabGoogle'), content: document.getElementById('contentGoogle') },
-        'Outlook': { tab: document.getElementById('tabOutlook'), content: document.getElementById('contentOutlook') },
-        'Apple': { tab: document.getElementById('tabApple'), content: document.getElementById('contentApple') }
-    };
-
-    Object.entries(tabs).forEach(([name, elements]) => {
-        if (elements.tab) {
-            elements.tab.addEventListener('click', () => {
-                Object.values(tabs).forEach(e => {
-                    if (e.tab && e.content) {
-                        e.tab.classList.remove('bg-white', 'text-blue-600', 'font-bold');
-                        e.tab.classList.add('bg-gray-50', 'text-gray-500', 'font-medium');
-                        e.content.classList.add('hidden');
-                    }
-                });
-                elements.tab.classList.remove('bg-gray-50', 'text-gray-500', 'font-medium');
-                elements.tab.classList.add('bg-white', 'text-blue-600', 'font-bold');
-                elements.content.classList.remove('hidden');
-            });
-        }
-    });
-
     const body = document.body;
     function setTheme(theme) {
         body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');

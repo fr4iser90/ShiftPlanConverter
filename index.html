@@ -192,47 +192,30 @@
             <h2 class="text-xl font-semibold mb-4">2. Kalender & Export</h2>
             
             <div class="flex flex-col md:flex-row gap-6">
-                <!-- LINKE SEITE: Cloud-Sync mit Tabs -->
+                <!-- LINKE SEITE: Cloud-Sync -->
                 <div class="flex-[2] bg-white border rounded-xl shadow-sm overflow-hidden flex flex-col">
-                    <!-- Tab-Leiste -->
-                    <div class="flex border-b bg-gray-50">
-                        <button id="tabGoogle" class="flex-1 py-2 text-sm font-bold bg-white text-blue-600 border-r transition-colors">Google</button>
-                        <button id="tabOutlook" class="flex-1 py-2 text-sm font-medium hover:bg-gray-100 border-r text-gray-500 transition-colors">Outlook</button>
-                        <button id="tabApple" class="flex-1 py-2 text-sm font-medium hover:bg-gray-100 text-gray-500 transition-colors">Apple</button>
-                    </div>
-                    
                     <div class="p-4 flex-1">
-                        <!-- Google Content (DEIN ORIGINAL) -->
+                        <!-- Google Content -->
                         <div id="contentGoogle">
-                            <h3 class="text-lg font-semibold mb-2">Google Calendar</h3>
+                            <h3 class="text-lg font-semibold mb-2 text-blue-600">Google Calendar Sync</h3>
                             <div class="mb-4">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Google Client ID</label>
                                 <input type="text" id="googleClientId" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
-                                       placeholder="Enter your Google Client ID">
+                                       placeholder="Deine Google Client ID hier einfügen">
                                 <p class="text-sm text-gray-500 mt-1">
-                                    <a href="https://console.cloud.google.com" target="_blank" class="text-blue-500 hover:underline">Get your Client ID</a>
+                                    <a href="https://console.cloud.google.com" target="_blank" class="text-blue-500 hover:underline font-medium">Hier Client ID erstellen →</a>
                                 </p>
-                                <p class="text-sm text-gray-600 mt-2">
-                                    Hinweis: Sie werden zu Google weitergeleitet, um den Zugriff auf Ihren Kalender zu erlauben. 
-                                    Dies ist notwendig, um Ihre Dienstplan-Einträge zu synchronisieren.
+                                <p class="text-[11px] text-gray-600 mt-3 leading-relaxed">
+                                    <b>Hinweis:</b> Die Synchronisation erfolgt direkt zwischen deinem Browser und Google. 
+                                    Deine Daten werden niemals auf fremde Server hochgeladen.
                                 </p>
                             </div>
                             <div class="space-y-2">
-                                <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded">Mit Google Kalender verbinden</button>
+                                <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors">Mit Google verbinden</button>
                                 <select id="calendarSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 mt-2" style="display:none;"></select>
-                                <button id="createCalendarBtn" class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded mt-2" style="display:none;">+ Neuen Kalender anlegen</button>
-                                <button id="syncBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Mit Kalender synchronisieren</button>
+                                <button id="createCalendarBtn" class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded mt-2 text-sm font-medium" style="display:none;">+ Neuen Kalender anlegen</button>
+                                <button id="syncBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded font-bold disabled:opacity-50 mt-2" disabled>Mit Kalender synchronisieren</button>
                             </div>
-                        </div>
-
-                        <!-- Outlook Content -->
-                        <div id="contentOutlook" class="hidden p-4 text-center text-gray-500 italic">
-                            Outlook / Office 365 Integration folgt in Kürze.
-                        </div>
-
-                        <!-- Apple Content -->
-                        <div id="contentApple" class="hidden p-4 text-center text-gray-500 italic">
-                            iCloud / Apple Calendar Integration folgt in Kürze.
                         </div>
                     </div>
                 </div>
