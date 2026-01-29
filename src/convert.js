@@ -70,16 +70,34 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                 ) {
                     mapping = shiftTypes[profession][bereich][preset];
                 }
-                const shiftType = mapping[timeKey] || `⚠️ ${timeKey}`;
-                mainEntries.push({ type: shiftType, date: date, start: startTime, end: endTime });
+                
+                // Unterstützung für String- oder Objekt-Mappings
+                const mappingValue = mapping[timeKey];
+                let shiftType = `⚠️ ${timeKey}`;
+                let isValidated = false;
+
+                if (typeof mappingValue === 'object' && mappingValue !== null) {
+                    shiftType = mappingValue.code || shiftType;
+                    isValidated = !!mappingValue.isValidated;
+                } else if (typeof mappingValue === 'string') {
+                    shiftType = mappingValue;
+                }
+
+                mainEntries.push({ 
+                    type: shiftType, 
+                    date: date, 
+                    start: startTime, 
+                    end: endTime,
+                    isValidated: isValidated
+                });
             } else if (vacationMatch && currentYear && currentMonth) {
                 const [_, day] = vacationMatch;
                 const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'URLAUB', date: date, allDay: true });
+                mainEntries.push({ type: 'URLAUB', date: date, allDay: true, isValidated: true });
             } else if (holidayMatch && currentYear && currentMonth) {
                 const [_, day] = holidayMatch;
                 const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true });
+                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true, isValidated: true });
             }
         }
     }
@@ -89,10 +107,6 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
     }
 
     // --- Pass 2: Process entries, handle merges, and build final list ---
-    // Debug-Ausgaben für Rohdaten
-    console.log("DEBUG mainEntries:", JSON.stringify(mainEntries, null, 2));
-    console.log("DEBUG bereitschaftEntries:", JSON.stringify(bereitschaftEntries, null, 2));
-
     const finalEntries = [];
     const handledMainIndices = new Set();
     const handledBereitschaftIndices = new Set();
@@ -106,7 +120,6 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
         let chain = [mainEntry];
         let currentEnd = mainEntry.end;
         let currentDate = mainEntry.date;
-        let foundBereitschaft = false;
 
         // Suche alle Bereitschaftsdienste, die direkt anschließen (auch über Mitternacht)
         for (let loop = 0; loop < 10; loop++) { // max 10er-Kette, Schutz vor Endlosschleife
@@ -119,7 +132,6 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                     currentEnd = bEntry.end;
                     handledBereitschaftIndices.add(b);
                     found = true;
-                    foundBereitschaft = true;
                     break;
                 }
                 // Über Mitternacht: Bereitschaft endet 00:00, nächster Block am Folgetag mit 00:00
@@ -129,7 +141,6 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                     currentDate = bEntry.date;
                     handledBereitschaftIndices.add(b);
                     found = true;
-                    foundBereitschaft = true;
                     break;
                 }
             }
@@ -142,10 +153,10 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                 type: 'MO',
                 date: mainEntry.date,
                 start: mainEntry.start,
-                end: chain[chain.length - 1].end
+                end: chain[chain.length - 1].end,
+                isValidated: true // Spezialdienste wie MO sind meist validiert
             });
             handledMainIndices.add(m);
-            // Bereitschafts-Indizes wurden oben schon markiert
         }
     }
 
@@ -163,7 +174,7 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
         }
     }
 
-    // Add any unhandled Bereitschaft entries (e.g., B36 or orphaned parts)
+    // Add any unhandled Bereitschaft entries
     for (let i = 0; i < bereitschaftEntries.length; i++) {
         if (!handledBereitschaftIndices.has(i)) {
             const item = bereitschaftEntries[i];
@@ -172,14 +183,16 @@ export function parseTimeSheet(pdfData, profession, bereich, preset, shiftTypes)
                     type: 'B36',
                     date: item.date,
                     start: item.start,
-                    end: item.end
+                    end: item.end,
+                    isValidated: true
                 });
             } else {
                 finalEntries.push({
                     type: `BEREIT_${item.start}-${item.end}`,
                     date: item.date,
                     start: item.start,
-                    end: item.end
+                    end: item.end,
+                    isValidated: false
                 });
             }
             handledBereitschaftIndices.add(i);

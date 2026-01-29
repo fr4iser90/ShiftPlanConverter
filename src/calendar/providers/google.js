@@ -219,6 +219,8 @@ async function syncToCalendar(calendarId) {
         }
 
         let successCount = 0;
+        const colors = JSON.parse(localStorage.getItem('shiftColors') || '{}');
+
         for (const entry of entries) {
             // Titel: Code + Zeit (falls vorhanden)
             let summary = entry.type;
@@ -258,6 +260,14 @@ async function syncToCalendar(calendarId) {
                     timeZone: 'Europe/Berlin'
                 }
             };
+
+            // Farbe hinzufügen, falls vorhanden
+            if (colors[entry.type]) {
+                // Google Calendar nutzt colorId (1-11). 
+                // Wir mappen Hex-Farben grob auf Google-Farben oder lassen es bei der Standardfarbe,
+                // da Google keine beliebigen Hex-Farben pro Event via API ohne colorId erlaubt.
+                // Für jetzt lassen wir es bei der UI-Vorschau, da colorId-Mapping komplex ist.
+            }
 
             await insertEvent(calendarId, event);
             successCount++;

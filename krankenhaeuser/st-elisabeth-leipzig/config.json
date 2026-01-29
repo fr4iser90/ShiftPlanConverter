@@ -1,0 +1,127 @@
+{
+  "name": "St. Elisabeth Leipzig",
+  "groups": [
+    {
+      "id": "pflege",
+      "label": "Pflegedienst",
+      "areas": [
+        {
+          "id": "ata",
+          "label": "Anästhesie (ATA)",
+          "mapping": "mappings/pflege-ata.json"
+        },
+        {
+          "id": "ota",
+          "label": "OP-Dienst (OTA)",
+          "mapping": "mappings/pflege-ota.json"
+        },
+        {
+          "id": "station1",
+          "label": "Station 1",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station2",
+          "label": "Station 2",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station3",
+          "label": "Station 3",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station4",
+          "label": "Station 4",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station5",
+          "label": "Station 5",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station6",
+          "label": "Station 6",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station7",
+          "label": "Station 7",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station8",
+          "label": "Station 8",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station9",
+          "label": "Station 9",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station10",
+          "label": "Station 10",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station11",
+          "label": "Station 11",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station12",
+          "label": "Station 12",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station13",
+          "label": "Station 13",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station14",
+          "label": "Station 14",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station15",
+          "label": "Station 15",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station16",
+          "label": "Station 16",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station17",
+          "label": "Station 17",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station18",
+          "label": "Station 18",
+          "mapping": "mappings/pflege-station.json"
+        },
+        {
+          "id": "station19",
+          "label": "Station 19",
+          "mapping": "mappings/pflege-station.json"
+        }
+      ]
+    },
+    {
+      "id": "aerzte",
+      "label": "Ärztlicher Dienst",
+      "areas": [
+        {
+          "id": "op",
+          "label": "OP / Anästhesie",
+          "mapping": "mappings/aerzte-op.json"
+        }
+      ]
+    }
+  ]
+}

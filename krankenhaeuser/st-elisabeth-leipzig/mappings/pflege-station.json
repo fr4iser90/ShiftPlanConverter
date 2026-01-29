@@ -1,0 +1,14 @@
+{
+  "colors": {
+    "F": "#22c55e",
+    "S": "#eab308",
+    "N": "#ef4444"
+  },
+  "presets": {
+    "standard": {
+      "06:00-14:00": { "code": "F", "isValidated": false },
+      "13:30-21:30": { "code": "S", "isValidated": false },
+      "21:00-06:30": { "code": "N", "isValidated": false }
+    }
+  }
+}

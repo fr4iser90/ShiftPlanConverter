@@ -1,3 +1,21 @@
+/* Globaler Fix für Mobile Click Delay */
+button, 
+select, 
+.dropzone,
+summary {
+    touch-action: manipulation;
+}
+
+.dropzone {
+    transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.dropzone:active {
+    transform: scale(0.98);
+    background-color: #f3f4f6;
+}
+
 /* Vorschau der Schichttypen klar hervorheben */
 #shiftTypesPreview table {
   margin-bottom: 0.5rem;
@@ -13,6 +31,26 @@
 }
 #shiftTypesPreview .font-bold {
   color: #2563eb;
+}
+
+/* Schicht-Farbauswahl */
+.shift-color-picker {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+.shift-color-picker::-webkit-color-swatch {
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+.shift-color-picker::-moz-color-swatch {
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
 }
 
 /* === Augenschonende Themes === */

@@ -92,26 +92,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Bereich</label>
                             <select id="bereichSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="op">OP-Bereich</option>
-                                <option value="station1">Station 1</option>
-                                <option value="station2">Station 2</option>
-                                <option value="station3">Station 3</option>
-                                <option value="station4">Station 4</option>
-                                <option value="station5">Station 5</option>
-                                <option value="station6">Station 6</option>
-                                <option value="station7">Station 7</option>
-                                <option value="station8">Station 8</option>
-                                <option value="station9">Station 9</option>
-                                <option value="station10">Station 10</option>
-                                <option value="station11">Station 11</option>
-                                <option value="station12">Station 12</option>
-                                <option value="station13">Station 13</option>
-                                <option value="station14">Station 14</option>
-                                <option value="station15">Station 15</option>
-                                <option value="station16">Station 16</option>
-                                <option value="station17">Station 17</option>
-                                <option value="station18">Station 18</option>
-                                <option value="station19">Station 19</option>
+                                <!-- Optionen werden dynamisch per JS eingefügt -->
                             </select>
                         </div>
                         <div>
@@ -126,8 +107,8 @@
                         <div id="shiftTypesConfig" class="border rounded-lg p-4 h-full flex flex-col">
                             <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold">Schichttypen</h3>
-                                <button id="addShiftType" class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm">
-                                    + Neue Schicht
+                                <button id="editShiftTypesBtn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded hover:bg-gray-300 text-sm">
+                                    Bearbeiten
                                 </button>
                             </div>
                             <!-- Vorschau-Liste -->
@@ -146,17 +127,61 @@
         <!-- Upload -->
         <section class="mb-8">
             <h2 class="text-xl font-semibold mb-2">1. PDF auswählen & konvertieren (alles lokal!)</h2>
-            <div id="dropzone" class="dropzone border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer mb-4">
-                <p>Datei hierher ziehen oder klicken zum Auswählen<br>
-                <span class="text-xs text-gray-500">Die Datei wird <b>nicht hochgeladen</b> – alles passiert nur im Browser.</span></p>
-                <input type="file" id="pdfInput" accept=".pdf" hidden>
+            <div id="dropzone" class="relative border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 transition-colors">
+                <input type="file" id="pdfInput" accept=".pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <div class="pointer-events-none">
+                    <p class="text-base font-medium">Datei auswählen oder hierher ziehen</p>
+                    <p class="text-xs text-gray-500 mt-2">Die Datei wird <b>nicht hochgeladen</b> – alles passiert nur im Browser.</p>
+                </div>
             </div>
             <!-- Vorschau und Download-Button -->
-            <div class="flex flex-col md:flex-row md:items-center gap-4">
-                <div id="previewContent" class="mb-4 bg-gray-50 p-4 rounded flex-1"></div>
+            <div class="flex flex-col md:flex-row md:items-center gap-4 mt-4">
+                <div id="previewContent" class="bg-gray-50 p-4 rounded flex-1"></div>
                 <button id="convertBtn" class="bg-blue-500 text-white px-4 py-2 rounded" style="display:none;">Dienstplan konvertieren (lokal)</button>
                 <button id="downloadBtn" class="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50" style="display:none;">Dienstplan herunterladen</button>
             </div>
+        </section>
+
+        <!-- Analyse Bereich für Parser-Entwicklung -->
+        <section id="debugArea" class="mb-8 border-t pt-6" style="display:none;">
+            <details class="group bg-gray-50 rounded-lg border border-gray-200">
+                <summary class="flex items-center justify-between cursor-pointer p-4 list-none">
+                    <div class="flex items-center gap-2 text-gray-700 font-medium">
+                        <svg class="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <span>Analyse zur Parser-Entwicklung (AnalysisData)</span>
+                    </div>
+                    <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">Datenschutz-Modus</span>
+                </summary>
+                
+                <div class="p-4 border-t border-gray-200">
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 text-xs text-blue-700">
+                        <p class="font-bold mb-1">ℹ️ STRUKTUR-ANALYSE</p>
+                        <p>Hier kannst du die Text-Struktur deines Dienstplans sehen. Klicke auf <b>"Anonymisieren"</b>, um private Daten zu entfernen. Danach kannst du die anonymen Daten an den Maintainer senden, um den Parser zu verbessern.</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button id="anonymizeBtn" class="bg-orange-500 text-white px-4 py-2 rounded text-sm font-bold hover:bg-orange-600 shadow-sm transition-colors">
+                            🛡️ Text anonymisieren
+                        </button>
+                        <button id="sendToMaintainerBtn" class="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold hover:bg-blue-700 shadow-sm transition-colors" style="display:none; color: white !important;">
+                            📧 An Maintainer senden (pa.boe90@gmail.com)
+                        </button>
+                        <button id="downloadDebugBtn" class="bg-gray-700 text-white px-4 py-2 rounded text-sm hover:bg-gray-800 shadow-sm transition-colors">
+                            💾 Als .txt speichern
+                        </button>
+                        <button id="clearDebugBtn" class="bg-white text-red-500 border border-red-200 px-4 py-2 rounded text-sm hover:bg-red-50 transition-colors">
+                            🗑️ Analyse löschen
+                        </button>
+                    </div>
+                    
+                    <div class="relative">
+                        <div class="absolute top-2 right-2 text-[10px] text-green-600 font-mono bg-gray-900 px-1 opacity-50">RAW_STRUCTURE_DATA</div>
+                        <pre id="rawTextOutput" class="bg-gray-900 text-green-400 p-4 rounded text-[10px] sm:text-xs overflow-x-auto max-h-96 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+                    </div>
+                </div>
+            </details>
         </section>
 
 
@@ -213,13 +238,6 @@
     </template>
 
     <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
-    <script type="module" src="pdfLoader.js"></script>
-    <script type="module" src="convert.js"></script>
-    <script type="module" src="preview.js"></script>
-    <script type="module" src="main.js"></script>
-    <script type="module">
-        import { exportToICS } from './icsExport.js';
-        document.getElementById('icsExportBtn').addEventListener('click', () => exportToICS());
-    </script>
+    <script type="module" src="src/main.js"></script>
 </body>
 </html>

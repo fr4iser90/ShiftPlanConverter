@@ -1,0 +1,28 @@
+{
+  "colors": {
+    "F": "#22c55e",
+    "F1": "#4ade80",
+    "F2": "#86efac",
+    "F3": "#bbf7d0",
+    "M1": "#3b82f6",
+    "M2": "#60a5fa",
+    "M3": "#93c5fd",
+    "B36": "#f87171",
+    "B38": "#dc2626",
+    "MO": "#8b5cf6"
+  },
+  "presets": {
+    "standard": {
+      "07:35-15:50": { "code": "F", "label": "Frühdienst", "type": "work", "isValidated": true },
+      "08:30-16:45": { "code": "F1", "type": "work", "isValidated": true },
+      "09:00-17:15": { "code": "F2", "type": "work", "isValidated": true },
+      "09:30-17:45": { "code": "F3", "type": "work", "isValidated": true },
+      "10:00-18:15": { "code": "M1", "type": "work", "isValidated": true },
+      "11:00-19:15": { "code": "M2", "type": "work", "isValidated": true },
+      "11:35-19:50": { "code": "M3", "type": "work", "isValidated": true },
+      "07:35-19:35": { "code": "B36", "type": "long", "isValidated": true },
+      "19:50-07:35": { "code": "B38", "type": "night", "isValidated": true },
+      "11:35-07:35": { "code": "MO", "type": "oncall", "isValidated": true }
+    }
+  }
+}
