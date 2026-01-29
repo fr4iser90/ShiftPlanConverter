@@ -8,7 +8,7 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - Automatische Erkennung von Schichten, Urlaub und Feiertagen
 - Vorschau der erkannten Einträge
 - Direkte Synchronisierung mit Google Kalender
-- Unterstützung für verschiedene Schichttypen (F, F1, F2, F3, M1, M2, M3, B36, B38, MO)
+- Unterstützung für verschiedene Schichttypen (F, F1, ...)
 - Bereitschaftsdienste werden automatisch erkannt
 - Anpassbare Schichttypen für verschiedene Berufsgruppen
 
@@ -19,18 +19,13 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 1. Erstelle ein Projekt in der [Google Cloud Console](https://console.cloud.google.com/)
 2. Aktiviere die Google Calendar API
 3. Erstelle OAuth 2.0-Anmeldedaten (Client ID und API Key)
-4. Ersetze in der `app.js` die Platzhalter:
-   ```javascript
-   const CLIENT_ID = 'YOUR_CLIENT_ID'; // Deine Client ID
-   const API_KEY = 'YOUR_API_KEY'; // Dein API Key
-   ```
 
 ### Docker Deployment
 
 1. Stelle sicher, dass Docker und Docker Compose installiert sind
 2. Klone das Repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/fr4iser90/ShiftPlanConverter
    cd ShiftPlanConverter
    ```
 3. Starte die Anwendung mit Docker Compose:
