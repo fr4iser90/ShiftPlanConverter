@@ -14,9 +14,44 @@ let currentHospitalConfig = null;
 let currentMapping = null;
 let currentParser = null;
 let currentKrankenhaus = 'st-elisabeth-leipzig';
-const MAINTAINER_EMAIL = 'pa.boe90@gmail.com';
 let isEditMode = false;
 let lastRawText = "";
+
+let appConfig = {
+    maintainerEmail: '',
+    githubRepo: ''
+};
+
+/**
+ * Lädt die globale Konfiguration
+ */
+async function loadAppConfig() {
+    try {
+        const response = await fetch('src/config.json');
+        const config = await response.json();
+        appConfig = { ...appConfig, ...config };
+        
+        // UI-Elemente mit Config-Werten aktualisieren
+        const maintainerLinks = document.querySelectorAll('.maintainer-email');
+        maintainerLinks.forEach(link => {
+            link.textContent = appConfig.maintainerEmail;
+            if (link.tagName === 'A') link.href = `mailto:${appConfig.maintainerEmail}`;
+        });
+
+        const githubLinks = document.querySelectorAll('.github-repo');
+        githubLinks.forEach(link => {
+            link.href = appConfig.githubRepo;
+        });
+
+        // Spezielle Buttons aktualisieren
+        const sendBtn = document.getElementById('sendToMaintainerBtn');
+        if (sendBtn) {
+            sendBtn.innerHTML = `📧 An Maintainer senden (${appConfig.maintainerEmail})`;
+        }
+    } catch (e) {
+        console.warn('Konnte config.json nicht laden, verwende Defaults:', e);
+    }
+}
 
 /**
  * Hilfsfunktionen für Schichtfarben
@@ -492,7 +527,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 "hier ist die anonymisierte Struktur meines Dienstplans:\n\n" + 
                 "---\n" + content + "\n---"
             );
-            window.location.href = `mailto:${MAINTAINER_EMAIL}?subject=${subject}&body=${body}`;
+            window.location.href = `mailto:${appConfig.maintainerEmail}?subject=${subject}&body=${body}`;
         });
     }
 
@@ -544,6 +579,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     reloadHospitalAndUI();
     initGoogleCalendar();
+    loadAppConfig();
 
     // Hilfe-Modal Logik
     const helpBtn = document.getElementById('helpBtn');
