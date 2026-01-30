@@ -4,9 +4,12 @@
  * Exportiert renderPreview(entries).
  */
 
-export function renderPreview(entries) {
+export function renderPreview(entries, currentMapping = null, currentPreset = 'standard') {
     const previewContent = document.getElementById('previewContent');
     if (!previewContent) return;
+
+    // Check for missing shifts (shifts not in mapping)
+    updateMissingShiftsUI(entries, currentMapping, currentPreset);
 
     if (!entries || entries.length === 0) {
         previewContent.innerHTML = '<div class="text-gray-400 italic">Keine Einträge vorhanden.</div>';
@@ -40,10 +43,16 @@ export function renderPreview(entries) {
                 console.error("Fehler beim Formatieren des Datums:", e);
             }
         }
+        
+        // Mark unknown shifts
+        const isUnknown = entry.isWork && !entry.type;
+        const rowClass = isUnknown ? 'bg-yellow-50' : '';
+        const typeDisplay = isUnknown ? '<span class="text-red-500 font-bold">?</span>' : (entry.type || '');
+
         html += `
-            <tr>
+            <tr class="${rowClass}">
                 <td class="border px-2 py-1">${displayDate}</td>
-                <td class="border px-2 py-1">${entry.type || ''}</td>
+                <td class="border px-2 py-1 text-center">${typeDisplay}</td>
                 <td class="border px-2 py-1">${entry.allDay ? '' : (entry.start || '')}</td>
                 <td class="border px-2 py-1">${entry.allDay ? '' : (entry.end || '')}</td>
             </tr>
@@ -54,4 +63,43 @@ export function renderPreview(entries) {
         </table>
     `;
     previewContent.innerHTML = html;
+}
+
+/**
+ * Findet Schichten, die im PDF stehen, aber nicht im Mapping sind
+ */
+function updateMissingShiftsUI(entries, mapping, preset) {
+    const container = document.getElementById('missingShiftsContainer');
+    const list = document.getElementById('missingShiftsList');
+    if (!container || !list) return;
+
+    if (!entries || !mapping) {
+        container.style.display = 'none';
+        return;
+    }
+
+    const presetData = mapping.presets[preset] || {};
+    const missingShifts = new Set();
+
+    entries.forEach(entry => {
+        if (entry.isWork && entry.start && entry.end) {
+            const timeRange = `${entry.start}-${entry.end}`;
+            if (!presetData[timeRange]) {
+                missingShifts.add(timeRange);
+            }
+        }
+    });
+
+    if (missingShifts.size > 0) {
+        list.innerHTML = '';
+        missingShifts.forEach(shift => {
+            const badge = document.createElement('div');
+            badge.className = 'bg-white border border-yellow-400 text-yellow-800 px-2 py-1 rounded text-xs font-mono shadow-sm flex items-center gap-2';
+            badge.innerHTML = `<span>${shift}</span> <span class="opacity-50">→ ?</span>`;
+            list.appendChild(badge);
+        });
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
 }

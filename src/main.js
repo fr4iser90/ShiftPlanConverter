@@ -251,6 +251,7 @@ function getCurrentShiftTypes() {
 
 function renderShiftTypesList(currentShiftTypes) {
     const previewDiv = document.getElementById('shiftTypesPreview');
+    const submitMappingBtn = document.getElementById('submitMappingBtn');
     if (!previewDiv) return;
 
     previewDiv.innerHTML = '';
@@ -262,6 +263,7 @@ function renderShiftTypesList(currentShiftTypes) {
         editBtn.textContent = 'Speichern';
         editBtn.classList.replace('bg-gray-200', 'bg-green-500');
         editBtn.classList.replace('text-gray-700', 'text-white');
+        if (submitMappingBtn) submitMappingBtn.style.display = 'flex';
         
         const container = document.createElement('div');
         container.className = "space-y-2";
@@ -279,57 +281,144 @@ function renderShiftTypesList(currentShiftTypes) {
             };
             
             const currentColor = colors[code] || '#3b82f6';
+            const timeParts = timeRange.split('-');
+            const startTime = timeParts[0] || '';
+            const endTime = timeParts[1] || '';
+
+            // Kontrastfarbe berechnen (Schwarz oder Weiß für Text auf farbigem Hintergrund)
+            const getContrastColor = (hex) => {
+                if (!hex || hex.length < 7) return '#000000';
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+                return (yiq >= 128) ? '#000000' : '#ffffff';
+            };
+
+            const contrastColor = getContrastColor(currentColor);
             
             row.innerHTML = `
-                <input type="text" class="edit-time w-24 text-xs border rounded px-1" value="${timeRange}">
-                <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold" value="${code}">
-                <div class="flex items-center gap-1 flex-1 overflow-x-auto pb-1">
-                    ${Object.entries(googleColors).map(([id, hex]) => `
-                        <button type="button" 
-                                class="color-swatch w-5 h-5 rounded-full border-2 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'border-black' : 'border-transparent'}" 
-                                style="background-color: ${hex}" 
-                                data-color="${hex}" 
-                                title="Google Color ${id}">
-                        </button>
-                    `).join('')}
-                    <input type="color" class="w-5 h-5 p-0 border-none bg-transparent cursor-pointer ml-1" value="${currentColor}" title="Custom Hex">
+                <div class="flex items-center gap-1 bg-white border rounded px-1">
+                    <input type="text" class="edit-start w-12 text-xs border-none p-0 focus:ring-0 text-center" 
+                           value="${startTime}" placeholder="00:00" maxlength="5">
+                    <span class="text-gray-400">-</span>
+                    <input type="text" class="edit-end w-12 text-xs border-none p-0 focus:ring-0 text-center" 
+                           value="${endTime}" placeholder="00:00" maxlength="5">
                 </div>
-                <button class="delete-shift text-red-500 hover:text-red-700 px-1">✕</button>
+                <div class="relative group">
+                    <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold text-center transition-colors" 
+                           value="${code}" placeholder="Code" 
+                           style="background-color: ${currentColor}; color: ${contrastColor}; border-color: ${currentColor}">
+                </div>
+                <div class="flex items-center gap-2 flex-1 min-w-[100px]">
+                    <!-- Aktive Farbe / Palette Toggle -->
+                    <div class="relative flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
+                        <div class="palette-container hidden absolute bottom-full left-0 mb-2 p-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex-wrap gap-1.5 w-40">
+                            ${Object.entries(googleColors).map(([id, hex]) => `
+                                <button type="button" 
+                                        class="color-swatch w-6 h-6 rounded shadow-sm transition-all hover:scale-110 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'ring-2 ring-gray-800 ring-offset-1' : ''}" 
+                                        style="background-color: ${hex}" 
+                                        data-color="${hex}" 
+                                        title="Google Farbe ${id}">
+                                </button>
+                            `).join('')}
+                            <div class="w-full h-px bg-gray-100 my-1"></div>
+                            <div class="relative w-full h-8 overflow-hidden rounded border border-gray-300">
+                                <input type="color" class="absolute -inset-1 w-full h-12 p-0 border-none bg-transparent cursor-pointer" value="${currentColor}">
+                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px] font-bold mix-blend-difference text-white">Eigene Farbe</div>
+                            </div>
+                        </div>
+                        <button type="button" class="palette-toggle w-8 h-8 rounded-md border-2 border-white shadow-sm transition-transform hover:scale-105" 
+                                style="background-color: ${currentColor}">
+                        </button>
+                        <span class="text-[10px] text-gray-500 font-mono hidden sm:inline">${currentColor.toUpperCase()}</span>
+                    </div>
+                </div>
+                <button class="delete-shift text-red-400 hover:text-red-600 p-1 transition-colors" title="Löschen">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             `;
             
-            const timeInput = row.querySelector('.edit-time');
+            const startInput = row.querySelector('.edit-start');
+            const endInput = row.querySelector('.edit-end');
             const codeInput = row.querySelector('.edit-code');
+            const paletteToggle = row.querySelector('.palette-toggle');
+            const paletteContainer = row.querySelector('.palette-container');
             const colorPicker = row.querySelector('input[type="color"]');
             const swatches = row.querySelectorAll('.color-swatch');
             const deleteBtn = row.querySelector('.delete-shift');
-            
-            const updateLocal = (newColor) => {
-                const newTime = timeInput.value;
-                const newCode = codeInput.value;
-                if (newTime !== timeRange) {
-                    delete currentShiftTypes[timeRange];
-                    currentShiftTypes[newTime] = typeof value === 'object' ? { ...value, code: newCode } : newCode;
-                } else {
-                    if (typeof value === 'object') value.code = newCode;
-                    else currentShiftTypes[timeRange] = newCode;
-                }
-                saveShiftColor(newCode, newColor || colorPicker.value);
+
+            // Palette öffnen/schließen
+            paletteToggle.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = paletteContainer.classList.contains('hidden');
+                document.querySelectorAll('.palette-container').forEach(p => p.classList.add('hidden')); // Alle anderen schließen
+                if (isHidden) paletteContainer.classList.remove('hidden');
             };
 
-            timeInput.addEventListener('change', () => updateLocal());
+            // Schließen wenn man außerhalb klickt
+            document.addEventListener('click', () => paletteContainer.classList.add('hidden'));
+            paletteContainer.onclick = (e) => e.stopPropagation();
+
+            let internalTimeRange = timeRange;
+
+            const updateLocal = (newColor) => {
+                const finalColor = newColor || colorPicker.value;
+                const newTime = `${startInput.value}-${endInput.value}`;
+                const newCode = codeInput.value;
+                
+                // UI Update
+                codeInput.style.backgroundColor = finalColor;
+                codeInput.style.color = getContrastColor(finalColor);
+                codeInput.style.borderColor = finalColor;
+                paletteToggle.style.backgroundColor = finalColor;
+                row.querySelector('span.text-gray-500').textContent = finalColor.toUpperCase();
+
+                if (newTime !== internalTimeRange) {
+                    delete currentShiftTypes[internalTimeRange];
+                    currentShiftTypes[newTime] = typeof value === 'object' ? { ...value, code: newCode } : newCode;
+                    internalTimeRange = newTime;
+                } else {
+                    if (typeof value === 'object') value.code = newCode;
+                    else currentShiftTypes[internalTimeRange] = newCode;
+                }
+                saveShiftColor(newCode, finalColor);
+            };
+
+            const formatTimeInput = (input) => {
+                input.addEventListener('input', (e) => {
+                    let val = e.target.value.replace(/\D/g, '');
+                    if (val.length > 2) val = val.slice(0, 2) + ':' + val.slice(2, 4);
+                    e.target.value = val;
+                });
+                input.addEventListener('blur', () => {
+                    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+                    if (!timeRegex.test(input.value) && input.value !== "") {
+                        input.classList.add('border-red-500', 'text-red-500');
+                    } else {
+                        input.classList.remove('border-red-500', 'text-red-500');
+                        updateLocal();
+                    }
+                });
+            };
+
+            formatTimeInput(startInput);
+            formatTimeInput(endInput);
             codeInput.addEventListener('change', () => updateLocal());
-            colorPicker.addEventListener('change', (e) => updateLocal(e.target.value));
+            colorPicker.addEventListener('change', (e) => {
+                updateLocal(e.target.value);
+                paletteContainer.classList.add('hidden');
+            });
             
             swatches.forEach(swatch => {
                 swatch.addEventListener('click', () => {
-                    swatches.forEach(s => s.classList.replace('border-black', 'border-transparent'));
-                    swatch.classList.replace('border-transparent', 'border-black');
                     updateLocal(swatch.dataset.color);
+                    paletteContainer.classList.add('hidden');
                 });
             });
 
             deleteBtn.addEventListener('click', () => {
-                delete currentShiftTypes[timeRange];
+                delete currentShiftTypes[internalTimeRange];
                 renderShiftTypesList(currentShiftTypes);
             });
             
@@ -350,6 +439,7 @@ function renderShiftTypesList(currentShiftTypes) {
         editBtn.textContent = 'Bearbeiten';
         editBtn.classList.replace('bg-green-500', 'bg-gray-200');
         editBtn.classList.replace('text-white', 'text-gray-700');
+        if (submitMappingBtn) submitMappingBtn.style.display = 'none';
 
         if (!currentShiftTypes || Object.keys(currentShiftTypes).length === 0) {
             previewDiv.innerHTML = '<div class="text-gray-400 italic">Keine Schichttypen vorhanden.</div>';
@@ -441,7 +531,7 @@ initPDFLoad({
 
             const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
             localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-            renderPreview(parsed.entries);
+            renderPreview(parsed.entries, currentMapping, preset);
 
             ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
                 const btn = document.getElementById(id);
@@ -517,15 +607,55 @@ window.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const content = document.getElementById('rawTextOutput').textContent;
             
-            // Platzhalter für den Nutzer zum Ausfüllen
-            const placeholder = "Berufsgruppe/Bereich: ____________________\n\n";
+            // Fehlende Schichten sammeln
+            const missingShiftsList = document.getElementById('missingShiftsList');
+            let missingShiftsText = "";
+            if (missingShiftsList && missingShiftsList.children.length > 0) {
+                missingShiftsText = "FEHLENDE SCHICHTEN:\n";
+                Array.from(missingShiftsList.children).forEach(child => {
+                    missingShiftsText += "- " + child.querySelector('span').textContent + "\n";
+                });
+                missingShiftsText += "\n";
+            }
+
+            const profession = document.getElementById('professionSelect')?.value;
+            const bereich = document.getElementById('bereichSelect')?.value;
+            const hospital = document.getElementById('krankenhausSelect')?.value;
             
-            const subject = encodeURIComponent("Dienstplan-Struktur [ShiftPlanConverter]");
+            const infoText = `Krankenhaus: ${hospital}\nBerufsgruppe: ${profession}\nBereich: ${bereich}\n\n`;
+            
+            const subject = encodeURIComponent("Dienstplan-Feedback [ShiftPlanConverter]");
             const body = encodeURIComponent(
                 "Hallo,\n\n" + 
-                placeholder + 
+                infoText + 
+                missingShiftsText +
                 "hier ist die anonymisierte Struktur meines Dienstplans:\n\n" + 
                 "---\n" + content + "\n---"
+            );
+            window.location.href = `mailto:${appConfig.maintainerEmail}?subject=${subject}&body=${body}`;
+        });
+    }
+
+    const submitMappingBtn = document.getElementById('submitMappingBtn');
+    if (submitMappingBtn) {
+        submitMappingBtn.addEventListener('click', () => {
+            const shiftTypes = getCurrentShiftTypes();
+            const hospital = document.getElementById('krankenhausSelect')?.value;
+            const profession = document.getElementById('professionSelect')?.value;
+            const bereich = document.getElementById('bereichSelect')?.value;
+            
+            let mappingText = `Krankenhaus: ${hospital}\nBerufsgruppe: ${profession}\nBereich: ${bereich}\n\nVORGESCHLAGENE SCHICHTEN:\n`;
+            
+            Object.entries(shiftTypes).forEach(([timeRange, value]) => {
+                const code = typeof value === 'object' ? value.code : value;
+                mappingText += `- ${code}: ${timeRange}\n`;
+            });
+
+            const subject = encodeURIComponent("Neuer Schicht-Mapping Vorschlag [ShiftPlanConverter]");
+            const body = encodeURIComponent(
+                "Hallo,\n\nich möchte folgendes Schicht-Mapping für die Datenbank vorschlagen:\n\n" + 
+                mappingText + 
+                "\nViele Grüße"
             );
             window.location.href = `mailto:${appConfig.maintainerEmail}?subject=${subject}&body=${body}`;
         });
