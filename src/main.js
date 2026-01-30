@@ -331,7 +331,6 @@ function renderShiftTypesList(currentShiftTypes) {
                         <button type="button" class="palette-toggle w-8 h-8 rounded-md border-2 border-white shadow-sm transition-transform hover:scale-105" 
                                 style="background-color: ${currentColor}">
                         </button>
-                        <span class="text-[10px] text-gray-500 font-mono hidden sm:inline">${currentColor.toUpperCase()}</span>
                     </div>
                 </div>
                 <button class="delete-shift text-red-400 hover:text-red-600 p-1 transition-colors" title="Löschen">
@@ -372,7 +371,6 @@ function renderShiftTypesList(currentShiftTypes) {
                 codeInput.style.color = getContrastColor(finalColor);
                 codeInput.style.borderColor = finalColor;
                 paletteToggle.style.backgroundColor = finalColor;
-                row.querySelector('span.text-gray-500').textContent = finalColor.toUpperCase();
 
                 if (newTime !== internalTimeRange) {
                     delete currentShiftTypes[internalTimeRange];
