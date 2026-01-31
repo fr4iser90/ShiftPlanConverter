@@ -9,6 +9,7 @@ import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
 import { initGoogleCalendar } from './google.js';
 import { exportToICS } from './icsGenerator.js';
+import { sendStructureFeedback, sendMappingProposal } from './api.js';
 
 let currentHospitalConfig = null;
 let currentMapping = null;
@@ -620,17 +621,14 @@ window.addEventListener('DOMContentLoaded', () => {
             const bereich = document.getElementById('bereichSelect')?.value;
             const hospital = document.getElementById('krankenhausSelect')?.value;
             
-            const infoText = `Krankenhaus: ${hospital}\nBerufsgruppe: ${profession}\nBereich: ${bereich}\n\n`;
-            
-            const subject = encodeURIComponent("Dienstplan-Feedback [ShiftPlanConverter]");
-            const body = encodeURIComponent(
-                "Hallo,\n\n" + 
-                infoText + 
-                missingShiftsText +
-                "hier ist die anonymisierte Struktur meines Dienstplans:\n\n" + 
-                "---\n" + content + "\n---"
+            sendStructureFeedback(
+                appConfig.maintainerEmail, 
+                hospital, 
+                profession, 
+                bereich, 
+                missingShiftsText, 
+                content
             );
-            window.location.href = `mailto:${appConfig.maintainerEmail}?subject=${subject}&body=${body}`;
         });
     }
 
@@ -642,20 +640,13 @@ window.addEventListener('DOMContentLoaded', () => {
             const profession = document.getElementById('professionSelect')?.value;
             const bereich = document.getElementById('bereichSelect')?.value;
             
-            let mappingText = `Krankenhaus: ${hospital}\nBerufsgruppe: ${profession}\nBereich: ${bereich}\n\nVORGESCHLAGENE SCHICHTEN:\n`;
-            
-            Object.entries(shiftTypes).forEach(([timeRange, value]) => {
-                const code = typeof value === 'object' ? value.code : value;
-                mappingText += `- ${code}: ${timeRange}\n`;
-            });
-
-            const subject = encodeURIComponent("Neuer Schicht-Mapping Vorschlag [ShiftPlanConverter]");
-            const body = encodeURIComponent(
-                "Hallo,\n\nich möchte folgendes Schicht-Mapping für die Datenbank vorschlagen:\n\n" + 
-                mappingText + 
-                "\nViele Grüße"
+            sendMappingProposal(
+                appConfig.maintainerEmail,
+                hospital,
+                profession,
+                bereich,
+                shiftTypes
             );
-            window.location.href = `mailto:${appConfig.maintainerEmail}?subject=${subject}&body=${body}`;
         });
     }
 
