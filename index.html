@@ -203,7 +203,7 @@
 
 
         <!-- 2. Kalender & Export -->
-        <section class="mb-8">
+        <section id="exportSection" class="mb-8 scroll-mt-8">
             <h2 class="text-xl font-semibold mb-4 text-center">2. Kalender & Export</h2>
             
             <div class="flex flex-col md:flex-row gap-6 justify-center items-center md:items-start">
@@ -237,22 +237,48 @@
 
                 <!-- RECHTE SEITE: Manueller Export -->
                 <div class="w-full md:flex-1 max-w-xs flex flex-col gap-3 items-center md:items-start">
-                    <div class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest text-center md:text-left">Manueller Export</div>
+                    <div class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-widest text-center md:text-left">Manueller Export (Datei speichern)</div>
                     
-                    <button id="icsExportBtn" class="w-full flex flex-col items-start px-4 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-black transition-all group shadow-sm">
-                        <span>📅 Kalender-Datei</span>
-                        <span class="text-[10px] font-normal opacity-60">iPhone, Outlook, Nextcloud (.ics)</span>
+                    <button id="icsExportBtn" class="w-full flex flex-col items-start px-4 py-3 bg-gray-800 text-white rounded-xl font-bold hover:bg-black transition-all group shadow-lg transform hover:-translate-y-1 disabled:opacity-50 disabled:transform-none">
+                        <span class="flex items-center gap-2">
+                            <span>📅 Kalender-Datei</span>
+                            <span class="bg-blue-500 text-[9px] px-1.5 py-0.5 rounded uppercase tracking-tighter">Empfohlen</span>
+                        </span>
+                        <span class="text-[10px] font-normal opacity-60">Für iPhone, Outlook, Google, Nextcloud (.ics)</span>
                     </button>
 
                     <button id="downloadBtn" class="w-full flex flex-col items-start px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-50 transition-all group shadow-sm disabled:opacity-50">
                         <span>📊 Excel-Tabelle</span>
-                        <span class="text-[10px] font-normal text-gray-400">Eigene Auswertung (.csv)</span>
+                        <span class="text-[10px] font-normal text-gray-400">Für eigene Auswertungen (.csv)</span>
                     </button>
+                    
+                    <div class="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-100 text-[11px] text-gray-500 italic">
+                        💡 Die <b>Kalender-Datei (.ics)</b> ist das universelle Format, um deine Dienste mit einem Klick in fast jede Kalender-App zu importieren.
+                    </div>
                 </div>
             </div>
         </section>
 
     </div>
+
+    <footer class="mt-12 py-8 border-t border-gray-200 bg-gray-50">
+        <div class="container mx-auto px-4 max-w-3xl text-center">
+            <div class="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 text-sm text-gray-600">
+                <a href="#" class="github-repo flex items-center gap-2 hover:text-blue-600 transition-colors" target="_blank">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.041-1.412-4.041-1.412-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    <span>GitHub Repository</span>
+                </a>
+                <a href="#" class="maintainer-email flex items-center gap-2 hover:text-blue-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Kontakt Maintainer</span>
+                </a>
+            </div>
+            <p class="mt-4 text-[11px] text-gray-400">
+                Dieses Tool ist ein privates Projekt und steht in keiner offiziellen Verbindung zu den genannten Krankenhäusern.
+                Alle Daten werden ausschließlich lokal in deinem Browser verarbeitet.
+            </p>
+        </div>
+    </footer>
 
     <!-- Template für Schichttyp-Eintrag -->
     <template id="shiftTypeTemplate">

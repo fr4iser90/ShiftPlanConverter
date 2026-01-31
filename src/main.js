@@ -532,6 +532,12 @@ initPDFLoad({
             localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
             renderPreview(parsed.entries, currentMapping, preset);
 
+            // Automatisch zum Export-Bereich scrollen
+            const exportSection = document.getElementById('exportSection');
+            if (exportSection) {
+                exportSection.scrollIntoView({ behavior: 'smooth' });
+            }
+
             ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
