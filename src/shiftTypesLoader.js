@@ -49,3 +49,16 @@ export async function loadHospitalParser(krankenhaus) {
     return null;
   }
 }
+
+/**
+ * Lädt die zentrale Sonder-Schichttypen-Konfiguration.
+ * @returns {Promise<Object>} - Die Sonder-Schichttypen-Konfiguration
+ */
+export async function loadSpecialShiftTypes() {
+  const url = `./src/specialShiftTypes.json`;
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Konnte Sonder-Schichttypen-Konfiguration nicht laden: ${response.statusText}`);
+  }
+  return await response.json();
+}

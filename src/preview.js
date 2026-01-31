@@ -1,10 +1,12 @@
+import { loadSpecialShiftTypes } from './shiftTypesLoader.js';
+
 /**
  * preview.js
  * Stellt die konvertierten Dienstplan-Einträge als Vorschau im UI dar.
  * Exportiert renderPreview(entries).
  */
 
-export function renderPreview(entries, currentMapping = null, currentPreset = 'standard') {
+export async function renderPreview(entries, currentMapping = null, currentPreset = 'standard') {
     const previewContent = document.getElementById('previewContent');
     if (!previewContent) return;
 
@@ -29,6 +31,9 @@ export function renderPreview(entries, currentMapping = null, currentPreset = 's
             </thead>
             <tbody>
     `;
+    // Lade Sonder-Schichttypen
+    const specialShiftTypes = await loadSpecialShiftTypes();
+
     entries.forEach(entry => {
         let displayDate = entry.date || '';
         if (displayDate) {
@@ -46,14 +51,38 @@ export function renderPreview(entries, currentMapping = null, currentPreset = 's
         
         // Mark unknown shifts
         const isUnknown = entry.isWork && !entry.type;
-        const rowClass = isUnknown ? 'bg-yellow-50' : '';
         const typeDisplay = isUnknown ? '<span class="text-red-500 font-bold">?</span>' : (entry.type || '');
+        
+        // Farbe für den Code ermitteln
+        const colors = JSON.parse(localStorage.getItem('shiftColors') || '{}');
+        
+        // Finde den passenden Code für Spezialtypen (z.B. URLAUB -> U)
+        let resolvedCode = entry.type;
+        if (currentMapping && currentPreset) {
+            const presetData = currentMapping.presets[currentPreset] || {};
+            const specialKey = `SPECIAL:${entry.type}`;
+            if (presetData[specialKey]) {
+                resolvedCode = typeof presetData[specialKey] === 'object' ? presetData[specialKey].code : presetData[specialKey];
+            }
+        }
+
+        const codeColor = colors[resolvedCode] || colors[entry.type] || '';
+        
+        // Sonder-Schichttypen Fallback-Farbe (falls nichts im Mapping/LocalStorage)
+        const specialType = specialShiftTypes[entry.type];
+        const specialColor = specialType ? specialType.color : '';
+        
+        // Priorität: 1. LocalStorage/Mapping (deine Farbe), 2. Sonderfarbe, 3. Standard
+        const finalColor = codeColor || specialColor || '';
+        const dotHtml = finalColor ? `<div class="w-2 h-2 rounded-full inline-block mr-2" style="background-color: ${finalColor}"></div>` : '';
 
         html += `
-            <tr class="${rowClass}">
+            <tr>
                 <td class="border px-2 py-1">${displayDate}</td>
-                <td class="border px-2 py-1 text-center">${typeDisplay}</td>
-                <td class="border px-2 py-1">${entry.allDay ? '' : (entry.start || '')}</td>
+                <td class="border px-2 py-1 text-center font-bold" style="color: ${finalColor}">
+                    ${dotHtml}${typeDisplay}
+                </td>
+                <td class="border px-2 py-1">${entry.allDay ? '<span class="text-[10px] text-gray-400 uppercase tracking-widest">Ganztägig</span>' : (entry.start || '')}</td>
                 <td class="border px-2 py-1">${entry.allDay ? '' : (entry.end || '')}</td>
             </tr>
         `;

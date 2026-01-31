@@ -12,8 +12,9 @@ export function parseStElisabeth(text) {
     // Regex patterns spezifisch für St. Elisabeth
     const monthYearRegex = /Abrechnungsmonat\s+(\d{2})\/(\d{4})/;
     const shiftRegex = /^\s*(\d{2})\s+\w+\s+KO\*\s+(\d{2}:\d{2})\s+GE\*\s+(\d{2}:\d{2})/;
-    const vacationRegex = /^\s*(\d{2})\s+\w+\s+URLTV/;
-    const holidayRegex = /^\s*(\d{2})\s+\w+\*?\s+FEIER/;
+    const vacationRegex = /^\s*(\d{2})\s+\w+\s+(URLTV|URLAUB|U)/i;
+    const krankRegex = /^\s*(\d{2})\s+\w+\s+(KRANK|K|KR)/i;
+    const holidayRegex = /^\s*(\d{2})\s+\w+\*?\s+FEIER/i;
     const onCallBereitschaftRegex = /^\s*(\d{2}\.\d{2}\.\d{4})\s+.*?(\d{2}:\d{2})\s+(\d{2}:\d{2})/;
     const bereitSectioRegex = /Bereitschaftsdienste/;
 
@@ -46,6 +47,7 @@ export function parseStElisabeth(text) {
         } else {
             const shiftMatch = line.match(shiftRegex);
             const vacationMatch = line.match(vacationRegex);
+            const krankMatch = line.match(krankRegex);
             const holidayMatch = line.match(holidayRegex);
 
             if (shiftMatch && currentYear && currentMonth) {
@@ -60,11 +62,15 @@ export function parseStElisabeth(text) {
             } else if (vacationMatch && currentYear && currentMonth) {
                 const [_, day] = vacationMatch;
                 const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'URLAUB', date: date, allDay: true });
+                mainEntries.push({ type: 'URLAUB', date: date, allDay: true, isSpecial: true });
+            } else if (krankMatch && currentYear && currentMonth) {
+                const [_, day] = krankMatch;
+                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
+                mainEntries.push({ type: 'KRANK', date: date, allDay: true, isSpecial: true });
             } else if (holidayMatch && currentYear && currentMonth) {
                 const [_, day] = holidayMatch;
                 const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true });
+                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true, isSpecial: true });
             }
         }
     }

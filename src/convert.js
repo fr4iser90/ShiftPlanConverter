@@ -17,6 +17,16 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
     }
 
     const mapping = (hospitalMapping && hospitalMapping.presets && hospitalMapping.presets[preset]) || {};
+    
+    // Sonderkürzel (Urlaub etc.) aus dem Mapping extrahieren
+    const specialCodes = {};
+    Object.entries(mapping).forEach(([key, value]) => {
+        if (key.startsWith('SPECIAL:')) {
+            const code = typeof value === 'object' ? value.code : value;
+            specialCodes[code] = true;
+        }
+    });
+
     const finalEntries = [];
     
     // Hilfsfunktion für Datum +1
@@ -92,6 +102,8 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         const entry = rawMain[i];
 
         if (entry.allDay) {
+            // Prüfen ob für dieses Kürzel eine Farbe/Mapping existiert
+            const mappingValue = specialCodes[entry.type] ? entry.type : null;
             finalEntries.push({ ...entry, isValidated: true });
             continue;
         }

@@ -1,0 +1,32 @@
+{
+  "URLAUB": {
+    "label": "Urlaub",
+    "kind": "absence",
+    "color": "#fde68a",
+    "countsAsWork": false
+  },
+  "FEIERTAG": {
+    "label": "Feiertag",
+    "kind": "calendar",
+    "color": "#e5e7eb",
+    "countsAsWork": false
+  },
+  "KRANK": {
+    "label": "Krank",
+    "kind": "absence",
+    "color": "#fca5a5",
+    "countsAsWork": false
+  },
+  "FORTBILDUNG": {
+    "label": "Fortbildung",
+    "kind": "special_work",
+    "color": "#a7f3d0",
+    "countsAsWork": true
+  },
+  "Karenz": {
+    "label": "Karenz",
+    "kind": "absence",
+    "color": "#cbd5e1",
+    "countsAsWork": false
+  }
+}

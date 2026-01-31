@@ -3,7 +3,7 @@
  * Zentrale Steuerung der App, verbindet alle Module.
  */
 
-import { loadHospitalConfig, loadMapping, loadHospitalParser } from './shiftTypesLoader.js';
+import { loadHospitalConfig, loadMapping, loadHospitalParser, loadSpecialShiftTypes } from './shiftTypesLoader.js';
 import { initPDFLoad } from './pdfLoader.js';
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
@@ -57,17 +57,42 @@ async function loadAppConfig() {
 /**
  * Hilfsfunktionen für Schichtfarben
  */
-function getShiftColors() {
+async function getShiftColors() {
     const stored = localStorage.getItem('shiftColors');
     const storedColors = stored ? JSON.parse(stored) : {};
     
     const mappingColors = currentMapping?.colors || {};
     
+    // Lade Sonder-Schichttypen
+    let specialTypes = {};
+    try {
+        specialTypes = await loadSpecialShiftTypes();
+    } catch (e) {
+        console.warn('Sonderfarben konnten nicht geladen werden', e);
+    }
+
+    const specialColors = {};
+    if (currentMapping && currentMapping.presets) {
+        // Suche in allen Presets nach SPECIAL: Kürzeln und weise ihnen die Sonderfarben zu
+        Object.values(currentMapping.presets).forEach(preset => {
+            Object.entries(preset).forEach(([key, value]) => {
+                if (key.startsWith('SPECIAL:')) {
+                    const type = key.split(':')[1];
+                    const code = typeof value === 'object' ? value.code : value;
+                    if (specialTypes[type]) {
+                        specialColors[code] = specialTypes[type].color;
+                    }
+                }
+            });
+        });
+    }
+
     const allColors = {
         'N': '#ef4444', 
         'F': '#22c55e', 
         'S': '#eab308', 
         'M': '#3b82f6', 
+        ...specialColors,
         ...mappingColors,
         ...storedColors
     };
@@ -79,12 +104,31 @@ function getShiftColors() {
     return allColors;
 }
 
-function saveShiftColor(code, color) {
+async function saveShiftColor(code, color) {
     const stored = localStorage.getItem('shiftColors');
     const colors = stored ? JSON.parse(stored) : {};
     colors[code] = color;
     localStorage.setItem('shiftColors', JSON.stringify(colors));
     renderShiftTypesList(getCurrentShiftTypes());
+    
+    // Preview sofort aktualisieren für direktes Feedback
+    refreshPreview();
+}
+
+/**
+ * Aktualisiert die Vorschau basierend auf dem aktuellen Mapping und dem letzten geladenen PDF-Text.
+ */
+async function refreshPreview() {
+    if (!lastRawText || !currentParser) return;
+
+    const presetSelect = document.getElementById('presetSelect');
+    const preset = presetSelect ? presetSelect.value : '';
+    const profession = document.getElementById('professionSelect')?.value;
+    const bereich = document.getElementById('bereichSelect')?.value;
+
+    const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser);
+    localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+    await renderPreview(parsed.entries, currentMapping, preset);
 }
 
 /**
@@ -122,7 +166,7 @@ async function reloadHospitalAndUI() {
         
         await updateAreaOptions();
         await updatePresetOptions();
-        renderShiftTypesList(getCurrentShiftTypes());
+        await renderShiftTypesList(getCurrentShiftTypes());
     } catch (e) {
         console.error('Fehler beim Initialisieren:', e);
     }
@@ -145,16 +189,18 @@ function setupDropdownListeners() {
             await updatePresetOptions();
         }
         renderShiftTypesList(getCurrentShiftTypes());
+        refreshPreview();
     };
 
     professionSelect.onchange = handleChange;
-    professionSelect.oninput = handleChange;
     
     bereichSelect.onchange = handleChange;
-    bereichSelect.oninput = handleChange;
 
     if (presetSelect) {
-        presetSelect.onchange = () => renderShiftTypesList(getCurrentShiftTypes());
+        presetSelect.onchange = () => {
+            renderShiftTypesList(getCurrentShiftTypes());
+            refreshPreview();
+        };
     }
 }
 
@@ -247,17 +293,25 @@ function getCurrentShiftTypes() {
     if (!presetSelect || !currentMapping || !currentMapping.presets) return {};
 
     const preset = presetSelect.value;
-    return currentMapping.presets[preset] || {};
+    const types = currentMapping.presets[preset] || {};
+    
+    // Standard-Sonderkürzel hinzufügen, falls nicht vorhanden
+    if (!Object.keys(types).some(k => k.startsWith('SPECIAL:'))) {
+        types["SPECIAL:URLAUB"] = { code: "U", isValidated: true };
+        types["SPECIAL:KRANK"] = { code: "K", isValidated: true };
+    }
+    
+    return types;
 }
 
-function renderShiftTypesList(currentShiftTypes) {
+async function renderShiftTypesList(currentShiftTypes) {
     const previewDiv = document.getElementById('shiftTypesPreview');
     const submitMappingBtn = document.getElementById('submitMappingBtn');
     if (!previewDiv) return;
 
     previewDiv.innerHTML = '';
 
-    const colors = getShiftColors();
+    const colors = await getShiftColors();
     const editBtn = document.getElementById('editShiftTypesBtn');
     
     if (isEditMode) {
@@ -282,7 +336,9 @@ function renderShiftTypesList(currentShiftTypes) {
             };
             
             const currentColor = colors[code] || '#3b82f6';
-            const timeParts = timeRange.split('-');
+            const isSpecial = timeRange.startsWith('SPECIAL:');
+            const displayTime = isSpecial ? 'Sonderkürzel' : timeRange;
+            const timeParts = isSpecial ? ['', ''] : timeRange.split('-');
             const startTime = timeParts[0] || '';
             const endTime = timeParts[1] || '';
 
@@ -299,12 +355,12 @@ function renderShiftTypesList(currentShiftTypes) {
             const contrastColor = getContrastColor(currentColor);
             
             row.innerHTML = `
-                <div class="flex items-center gap-1 bg-white border rounded px-1">
+                <div class="flex items-center gap-1 bg-white border rounded px-1 ${isSpecial ? 'opacity-50 grayscale' : ''}">
                     <input type="text" class="edit-start w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${startTime}" placeholder="00:00" maxlength="5">
+                           value="${startTime}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
                     <span class="text-gray-400">-</span>
                     <input type="text" class="edit-end w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${endTime}" placeholder="00:00" maxlength="5">
+                           value="${endTime}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
                 </div>
                 <div class="relative group">
                     <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold text-center transition-colors" 
@@ -362,9 +418,8 @@ function renderShiftTypesList(currentShiftTypes) {
 
             let internalTimeRange = timeRange;
 
-            const updateLocal = (newColor) => {
+            const updateLocal = async (newColor) => {
                 const finalColor = newColor || colorPicker.value;
-                const newTime = `${startInput.value}-${endInput.value}`;
                 const newCode = codeInput.value;
                 
                 // UI Update
@@ -373,15 +428,22 @@ function renderShiftTypesList(currentShiftTypes) {
                 codeInput.style.borderColor = finalColor;
                 paletteToggle.style.backgroundColor = finalColor;
 
-                if (newTime !== internalTimeRange) {
-                    delete currentShiftTypes[internalTimeRange];
-                    currentShiftTypes[newTime] = typeof value === 'object' ? { ...value, code: newCode } : newCode;
-                    internalTimeRange = newTime;
+                if (!isSpecial) {
+                    const newTime = `${startInput.value}-${endInput.value}`;
+                    if (newTime !== internalTimeRange) {
+                        delete currentShiftTypes[internalTimeRange];
+                        currentShiftTypes[newTime] = typeof value === 'object' ? { ...value, code: newCode } : newCode;
+                        internalTimeRange = newTime;
+                    } else {
+                        if (typeof value === 'object') value.code = newCode;
+                        else currentShiftTypes[internalTimeRange] = newCode;
+                    }
                 } else {
+                    // Bei Special Codes nur den Code aktualisieren (Key bleibt SPECIAL:...)
                     if (typeof value === 'object') value.code = newCode;
                     else currentShiftTypes[internalTimeRange] = newCode;
                 }
-                saveShiftColor(newCode, finalColor);
+                await saveShiftColor(newCode, finalColor);
             };
 
             const formatTimeInput = (input) => {
@@ -419,6 +481,7 @@ function renderShiftTypesList(currentShiftTypes) {
             deleteBtn.addEventListener('click', () => {
                 delete currentShiftTypes[internalTimeRange];
                 renderShiftTypesList(currentShiftTypes);
+                refreshPreview();
             });
             
             container.appendChild(row);
@@ -430,9 +493,21 @@ function renderShiftTypesList(currentShiftTypes) {
         addBtn.onclick = () => {
             currentShiftTypes["00:00-00:00"] = { code: "NEW", isValidated: false };
             renderShiftTypesList(currentShiftTypes);
+            refreshPreview();
+        };
+
+        const addSpecialBtn = document.createElement('button');
+        addSpecialBtn.className = "w-full mt-1 py-1 text-xs bg-purple-50 text-purple-600 border border-purple-200 border-dashed rounded hover:bg-purple-100";
+        addSpecialBtn.textContent = "+ Sonderkürzel hinzufügen (Urlaub etc.)";
+        addSpecialBtn.onclick = () => {
+            const id = Math.random().toString(36).substr(2, 5).toUpperCase();
+            currentShiftTypes[`SPECIAL:${id}`] = { code: "U", isValidated: true };
+            renderShiftTypesList(currentShiftTypes);
+            refreshPreview();
         };
         
         container.appendChild(addBtn);
+        container.appendChild(addSpecialBtn);
         previewDiv.appendChild(container);
     } else {
         editBtn.textContent = 'Bearbeiten';
@@ -448,11 +523,18 @@ function renderShiftTypesList(currentShiftTypes) {
         const table = document.createElement('table');
         table.className = "w-full text-sm mb-2";
         Object.entries(currentShiftTypes).forEach(([timeRange, value]) => {
-            const [start, end] = timeRange.split('-');
+            const isSpecial = timeRange.startsWith('SPECIAL:');
+            const [start, end] = isSpecial ? ['', ''] : timeRange.split('-');
             const code = typeof value === 'object' ? value.code : value;
             const isValidated = typeof value === 'object' ? !!value.isValidated : false;
             const color = colors[code] || '#3b82f6';
             
+            let label = isSpecial ? '<span class="text-[10px] text-purple-500 font-medium uppercase tracking-tighter bg-purple-50 px-1 rounded">Sonderkürzel</span>' : `${start}–${end}`;
+            
+            // Beschreibung für Standard-Sonderkürzel hinzufügen
+            if (timeRange === 'SPECIAL:URLAUB') label += ' <span class="text-[10px] text-gray-400 ml-1">(Urlaub)</span>';
+            if (timeRange === 'SPECIAL:KRANK') label += ' <span class="text-[10px] text-gray-400 ml-1">(Krank)</span>';
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="w-8 py-1">
@@ -462,7 +544,7 @@ function renderShiftTypesList(currentShiftTypes) {
                     ${code}
                     ${isValidated ? '<span title="Validiert" class="ml-1 text-blue-500">✓</span>' : ''}
                 </td>
-                <td>${start}–${end}</td>
+                <td>${label}</td>
             `;
             table.appendChild(tr);
         });
@@ -530,7 +612,7 @@ initPDFLoad({
 
             const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
             localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-            renderPreview(parsed.entries, currentMapping, preset);
+            await renderPreview(parsed.entries, currentMapping, preset);
 
             // Automatisch zum Export-Bereich scrollen
             const exportSection = document.getElementById('exportSection');
@@ -674,33 +756,7 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const professionSelect = document.getElementById('professionSelect');
-    const bereichSelect = document.getElementById('bereichSelect');
-    const presetSelect = document.getElementById('presetSelect');
-
-    const handleProfessionChange = async () => {
-        await updateAreaOptions();
-        await updatePresetOptions();
-        renderShiftTypesList(getCurrentShiftTypes());
-    };
-
-    const handleBereichChange = async () => {
-        await loadCurrentMapping();
-        await updatePresetOptions();
-        renderShiftTypesList(getCurrentShiftTypes());
-    };
-
-    if (professionSelect) {
-        professionSelect.addEventListener('change', handleProfessionChange);
-        professionSelect.addEventListener('input', handleProfessionChange);
-    }
-    if (bereichSelect) {
-        bereichSelect.addEventListener('change', handleBereichChange);
-        bereichSelect.addEventListener('input', handleBereichChange);
-    }
-    if (presetSelect) {
-        presetSelect.addEventListener('change', () => renderShiftTypesList(getCurrentShiftTypes()));
-    }
+    // Dropdown listeners are initialized via reloadHospitalAndUI -> setupDropdownListeners
 
     reloadHospitalAndUI();
     initGoogleCalendar();
