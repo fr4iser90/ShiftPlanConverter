@@ -366,55 +366,122 @@ async function renderShiftTypesList(currentShiftTypes) {
 
             const contrastColor = getContrastColor(currentColor);
             
-            row.innerHTML = `
-                <div class="flex items-center gap-1 bg-white border rounded px-1 ${isSpecial ? 'opacity-50 grayscale' : ''}">
-                    <input type="text" class="edit-start w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${escapeHtml(startTime)}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
-                    <span class="text-gray-400">-</span>
-                    <input type="text" class="edit-end w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${escapeHtml(endTime)}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
-                </div>
-                <div class="relative group">
-                    <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold text-center transition-colors" 
-                           value="${escapeHtml(code)}" placeholder="Code" 
-                           style="background-color: ${escapeHtml(currentColor)}; color: ${escapeHtml(contrastColor)}; border-color: ${escapeHtml(currentColor)}">
-                </div>
-                <div class="flex items-center gap-2 flex-1 min-w-[100px]">
-                    <!-- Aktive Farbe / Palette Toggle -->
-                    <div class="relative flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200">
-                        <div class="palette-container hidden absolute bottom-full left-0 mb-2 p-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex-wrap gap-1.5 w-40">
-                            ${Object.entries(googleColors).map(([id, hex]) => `
-                                <button type="button" 
-                                        class="color-swatch w-6 h-6 rounded shadow-sm transition-all hover:scale-110 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'ring-2 ring-gray-800 ring-offset-1' : ''}" 
-                                        style="background-color: ${escapeHtml(hex)}" 
-                                        data-color="${escapeHtml(hex)}" 
-                                        title="Google Farbe ${escapeHtml(id)}">
-                                </button>
-                            `).join('')}
-                            <div class="w-full h-px bg-gray-100 my-1"></div>
-                            <div class="relative w-full h-8 overflow-hidden rounded border border-gray-300">
-                                <input type="color" class="absolute -inset-1 w-full h-12 p-0 border-none bg-transparent cursor-pointer" value="${escapeHtml(currentColor)}">
-                                <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px] font-bold mix-blend-difference text-white">Eigene Farbe</div>
-                            </div>
-                        </div>
-                        <button type="button" class="palette-toggle w-8 h-8 rounded-md border-2 border-white shadow-sm transition-transform hover:scale-105" 
-                                style="background-color: ${escapeHtml(currentColor)}">
-                        </button>
-                    </div>
-                </div>
-                <button class="delete-shift text-red-400 hover:text-red-600 p-1 transition-colors" title="Löschen">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-            `;
+            // Create row structure using DOM methods instead of innerHTML
+            const timeContainer = document.createElement('div');
+            timeContainer.className = `flex items-center gap-1 bg-white border rounded px-1 ${isSpecial ? 'opacity-50 grayscale' : ''}`;
             
-            const startInput = row.querySelector('.edit-start');
-            const endInput = row.querySelector('.edit-end');
-            const codeInput = row.querySelector('.edit-code');
-            const paletteToggle = row.querySelector('.palette-toggle');
-            const paletteContainer = row.querySelector('.palette-container');
-            const colorPicker = row.querySelector('input[type="color"]');
-            const swatches = row.querySelectorAll('.color-swatch');
-            const deleteBtn = row.querySelector('.delete-shift');
+            const startInput = document.createElement('input');
+            startInput.type = 'text';
+            startInput.className = 'edit-start w-12 text-xs border-none p-0 focus:ring-0 text-center';
+            startInput.value = startTime;
+            startInput.placeholder = isSpecial ? '---' : '00:00';
+            startInput.maxLength = 5;
+            if (isSpecial) startInput.disabled = true;
+            
+            const dash = document.createElement('span');
+            dash.className = 'text-gray-400';
+            dash.textContent = '-';
+            
+            const endInput = document.createElement('input');
+            endInput.type = 'text';
+            endInput.className = 'edit-end w-12 text-xs border-none p-0 focus:ring-0 text-center';
+            endInput.value = endTime;
+            endInput.placeholder = isSpecial ? '---' : '00:00';
+            endInput.maxLength = 5;
+            if (isSpecial) endInput.disabled = true;
+            
+            timeContainer.appendChild(startInput);
+            timeContainer.appendChild(dash);
+            timeContainer.appendChild(endInput);
+            
+            const codeContainer = document.createElement('div');
+            codeContainer.className = 'relative group';
+            
+            const codeInput = document.createElement('input');
+            codeInput.type = 'text';
+            codeInput.className = 'edit-code w-12 text-xs border rounded px-1 font-bold text-center transition-colors';
+            codeInput.value = code;
+            codeInput.placeholder = 'Code';
+            codeInput.style.backgroundColor = currentColor;
+            codeInput.style.color = contrastColor;
+            codeInput.style.borderColor = currentColor;
+            
+            codeContainer.appendChild(codeInput);
+            
+            // Palette container
+            const paletteWrapper = document.createElement('div');
+            paletteWrapper.className = 'flex items-center gap-2 flex-1 min-w-[100px]';
+            
+            const paletteContainerDiv = document.createElement('div');
+            paletteContainerDiv.className = 'relative flex items-center gap-1 bg-gray-100 p-1 rounded-lg border border-gray-200';
+            
+            const paletteContainer = document.createElement('div');
+            paletteContainer.className = 'palette-container hidden absolute bottom-full left-0 mb-2 p-2 bg-white rounded-xl shadow-xl border border-gray-200 z-50 flex-wrap gap-1.5 w-40';
+            
+            // Create color swatches
+            Object.entries(googleColors).forEach(([id, hex]) => {
+                const swatch = document.createElement('button');
+                swatch.type = 'button';
+                swatch.className = `color-swatch w-6 h-6 rounded shadow-sm transition-all hover:scale-110 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'ring-2 ring-gray-800 ring-offset-1' : ''}`;
+                swatch.style.backgroundColor = hex;
+                swatch.dataset.color = hex;
+                swatch.title = `Google Farbe ${id}`;
+                paletteContainer.appendChild(swatch);
+            });
+            
+            const divider = document.createElement('div');
+            divider.className = 'w-full h-px bg-gray-100 my-1';
+            paletteContainer.appendChild(divider);
+            
+            const colorPickerContainer = document.createElement('div');
+            colorPickerContainer.className = 'relative w-full h-8 overflow-hidden rounded border border-gray-300';
+            
+            const colorPicker = document.createElement('input');
+            colorPicker.type = 'color';
+            colorPicker.className = 'absolute -inset-1 w-full h-12 p-0 border-none bg-transparent cursor-pointer';
+            colorPicker.value = currentColor;
+            
+            const colorPickerLabel = document.createElement('div');
+            colorPickerLabel.className = 'absolute inset-0 flex items-center justify-center pointer-events-none text-[10px] font-bold mix-blend-difference text-white';
+            colorPickerLabel.textContent = 'Eigene Farbe';
+            
+            colorPickerContainer.appendChild(colorPicker);
+            colorPickerContainer.appendChild(colorPickerLabel);
+            paletteContainer.appendChild(colorPickerContainer);
+            
+            const paletteToggle = document.createElement('button');
+            paletteToggle.type = 'button';
+            paletteToggle.className = 'palette-toggle w-8 h-8 rounded-md border-2 border-white shadow-sm transition-transform hover:scale-105';
+            paletteToggle.style.backgroundColor = currentColor;
+            
+            paletteContainerDiv.appendChild(paletteContainer);
+            paletteContainerDiv.appendChild(paletteToggle);
+            paletteWrapper.appendChild(paletteContainerDiv);
+            
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-shift text-red-400 hover:text-red-600 p-1 transition-colors';
+            deleteBtn.title = 'Löschen';
+            const deleteSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            deleteSvg.setAttribute('class', 'w-5 h-5');
+            deleteSvg.setAttribute('fill', 'none');
+            deleteSvg.setAttribute('stroke', 'currentColor');
+            deleteSvg.setAttribute('viewBox', '0 0 24 24');
+            const deletePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            deletePath.setAttribute('stroke-linecap', 'round');
+            deletePath.setAttribute('stroke-linejoin', 'round');
+            deletePath.setAttribute('stroke-width', '2');
+            deletePath.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+            deleteSvg.appendChild(deletePath);
+            deleteBtn.appendChild(deleteSvg);
+            
+            // Assemble row
+            row.appendChild(timeContainer);
+            row.appendChild(codeContainer);
+            row.appendChild(paletteWrapper);
+            row.appendChild(deleteBtn);
+            
+            const swatches = paletteContainer.querySelectorAll('.color-swatch');
 
             // Palette öffnen/schließen
             paletteToggle.onclick = (e) => {
@@ -560,14 +627,22 @@ async function renderShiftTypesList(currentShiftTypes) {
                 codeCell.appendChild(checkmark);
             }
             
-            tr.innerHTML = `
-                <td class="w-8 py-1">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${escapeHtml(color)}"></div>
-                </td>
-            `;
+            const colorCell = document.createElement('td');
+            colorCell.className = 'w-8 py-1';
+            const colorDot = document.createElement('div');
+            colorDot.className = 'w-4 h-4 rounded-full';
+            colorDot.style.backgroundColor = color;
+            colorCell.appendChild(colorDot);
+            tr.appendChild(colorCell);
             tr.appendChild(codeCell);
             const labelCell = document.createElement('td');
-            labelCell.innerHTML = label; // label already contains safe HTML from our code
+            // label contains HTML from our code (not user input), but we'll use textContent for safety
+            // Since label contains HTML spans, we need to parse it safely
+            const labelTemp = document.createElement('div');
+            labelTemp.innerHTML = label;
+            while (labelTemp.firstChild) {
+                labelCell.appendChild(labelTemp.firstChild);
+            }
             tr.appendChild(labelCell);
             table.appendChild(tr);
         });

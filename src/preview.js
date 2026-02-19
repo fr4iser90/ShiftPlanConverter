@@ -107,7 +107,13 @@ export async function renderPreview(entries, currentMapping = null, currentPrese
             </tbody>
         </table>
     `;
-    previewContent.innerHTML = html;
+    // Use DOMParser to safely parse HTML instead of innerHTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    previewContent.innerHTML = '';
+    if (doc.body && doc.body.firstChild) {
+        previewContent.appendChild(doc.body.firstChild);
+    }
 }
 
 /**
