@@ -11,3 +11,11 @@ services:
     restart: unless-stopped
     ports:
       - 8080:80
+    security_opt:
+      - no-new-privileges=true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+      - /var/log/nginx

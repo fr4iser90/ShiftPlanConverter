@@ -595,7 +595,11 @@ async function renderShiftTypesList(currentShiftTypes) {
         if (submitMappingBtn) submitMappingBtn.style.display = 'none';
 
         if (!currentShiftTypes || Object.keys(currentShiftTypes).length === 0) {
-            previewDiv.innerHTML = '<div class="text-gray-400 italic">Keine Schichttypen vorhanden.</div>';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'text-gray-400 italic';
+            emptyDiv.textContent = 'Keine Schichttypen vorhanden.';
+            previewDiv.innerHTML = '';
+            previewDiv.appendChild(emptyDiv);
             return;
         }
 
@@ -636,12 +640,27 @@ async function renderShiftTypesList(currentShiftTypes) {
             tr.appendChild(colorCell);
             tr.appendChild(codeCell);
             const labelCell = document.createElement('td');
-            // label contains HTML from our code (not user input), but we'll use textContent for safety
-            // Since label contains HTML spans, we need to parse it safely
-            const labelTemp = document.createElement('div');
-            labelTemp.innerHTML = label;
-            while (labelTemp.firstChild) {
-                labelCell.appendChild(labelTemp.firstChild);
+            // Create label safely using DOM methods instead of innerHTML
+            if (isSpecial) {
+                const specialBadge = document.createElement('span');
+                specialBadge.className = 'text-[10px] text-purple-500 font-medium uppercase tracking-tighter bg-purple-50 px-1 rounded';
+                specialBadge.textContent = 'Sonderkürzel';
+                labelCell.appendChild(specialBadge);
+                
+                if (timeRange === 'SPECIAL:URLAUB') {
+                    const urlaubSpan = document.createElement('span');
+                    urlaubSpan.className = 'text-[10px] text-gray-400 ml-1';
+                    urlaubSpan.textContent = '(Urlaub)';
+                    labelCell.appendChild(urlaubSpan);
+                } else if (timeRange === 'SPECIAL:KRANK') {
+                    const krankSpan = document.createElement('span');
+                    krankSpan.className = 'text-[10px] text-gray-400 ml-1';
+                    krankSpan.textContent = '(Krank)';
+                    labelCell.appendChild(krankSpan);
+                }
+            } else {
+                // Escape time range for safety
+                labelCell.textContent = `${escapeHtml(start)}–${escapeHtml(end)}`;
             }
             tr.appendChild(labelCell);
             table.appendChild(tr);
@@ -654,7 +673,15 @@ initPDFLoad({
     onPdfLoaded: (arrayBuffer, file) => {
         const previewContent = document.getElementById('previewContent');
         if (previewContent) {
-            previewContent.innerHTML = '<div class="flex items-center gap-2 text-blue-600"><span class="animate-spin">⏳</span> PDF wird analysiert...</div>';
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'flex items-center gap-2 text-blue-600';
+            const spinSpan = document.createElement('span');
+            spinSpan.className = 'animate-spin';
+            spinSpan.textContent = '⏳';
+            loadingDiv.appendChild(spinSpan);
+            loadingDiv.appendChild(document.createTextNode(' PDF wird analysiert...'));
+            previewContent.innerHTML = '';
+            previewContent.appendChild(loadingDiv);
         }
 
         window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise.then(async function(pdf) {
@@ -687,7 +714,13 @@ initPDFLoad({
 
             if (!pdfText.trim()) {
                 alert("Fehler: Es konnte kein Text aus dem PDF gelesen werden.");
-                if (previewContent) previewContent.innerHTML = '<div class="text-red-500">Fehler: PDF leer oder Bild.</div>';
+                if (previewContent) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-red-500';
+                    errorDiv.textContent = 'Fehler: PDF leer oder Bild.';
+                    previewContent.innerHTML = '';
+                    previewContent.appendChild(errorDiv);
+                }
                 return;
             }
 
@@ -704,7 +737,13 @@ initPDFLoad({
             
             if (!currentParser) {
                 alert("Fehler: Kein Parser für dieses Krankenhaus gefunden.");
-                if (previewContent) previewContent.innerHTML = '<div class="text-red-500">Fehler: Parser fehlt.</div>';
+                if (previewContent) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'text-red-500';
+                    errorDiv.textContent = 'Fehler: Parser fehlt.';
+                    previewContent.innerHTML = '';
+                    previewContent.appendChild(errorDiv);
+                }
                 return;
             }
 
