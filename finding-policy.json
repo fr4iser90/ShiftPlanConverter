@@ -1,0 +1,30 @@
+{
+  "semgrep": {
+    "accepted_findings": [
+      {
+        "check_id": "yaml.docker-compose.security.no-new-privileges.no-new-privileges",
+        "path_regex": "docker-compose\\.yml$",
+        "reason": "We use the correct format 'no-new-privileges=true' (with =). The scanner incorrectly expects 'no-new-privileges:true' (with :). This is a false positive."
+      },
+      {
+        "check_id": "html.security.audit.missing-integrity.missing-integrity",
+        "path_regex": "index\\.html$",
+        "message_regex": "apis\\.google\\.com|accounts\\.google\\.com",
+        "reason": "Google APIs (apis.google.com, accounts.google.com) do not support integrity attributes as they are dynamically generated scripts. This is a known limitation and not a security issue."
+      },
+      {
+        "check_id": "generic.nginx.security.header-redefinition.header-redefinition",
+        "path_regex": "nginx\\.conf$",
+        "reason": "We explicitly set all security headers in location blocks to prevent overwriting. All security headers (X-Frame-Options, X-XSS-Protection, etc.) are explicitly set in each location block, so they are not being overwritten. This is the correct approach when you need location-specific headers like Cache-Control."
+      }
+    ],
+    "dedupe": {
+      "enabled": true,
+      "line_window": 2
+    }
+  },
+  "dedupe": {
+    "enabled": true,
+    "line_window": 2
+  }
+}
