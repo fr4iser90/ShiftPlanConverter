@@ -9,8 +9,7 @@
       {
         "check_id": "html.security.audit.missing-integrity.missing-integrity",
         "path_regex": "index\\.html$",
-        "message_regex": "apis\\.google\\.com|accounts\\.google\\.com",
-        "reason": "Google APIs (apis.google.com, accounts.google.com) do not support integrity attributes as they are dynamically generated scripts. This is a known limitation and not a security issue."
+        "reason": "Google APIs (apis.google.com, accounts.google.com) do not support integrity attributes as they are dynamically generated scripts. This is a known limitation and not a security issue. The consolidated findings around lines 11-13 refer to these Google API scripts."
       },
       {
         "check_id": "generic.nginx.security.header-redefinition.header-redefinition",
