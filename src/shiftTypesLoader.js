@@ -45,7 +45,7 @@ export async function loadHospitalParser(krankenhaus) {
     if (module.default) return module.default;
     return Object.values(module).find(f => typeof f === 'function');
   } catch (e) {
-    console.warn(`Kein spezifischer Parser für ${krankenhaus} gefunden, nutze Standard.`, e);
+    console.warn('Kein spezifischer Parser für', krankenhaus, 'gefunden, nutze Standard.', e);
     return null;
   }
 }

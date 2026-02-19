@@ -11,6 +11,18 @@ import { initGoogleCalendar } from './google.js';
 import { exportToICS } from './icsGenerator.js';
 import { sendStructureFeedback, sendMappingProposal } from './api.js';
 
+/**
+ * Escapes HTML special characters to prevent XSS attacks
+ * @param {string} str - String to escape
+ * @returns {string} - Escaped string
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 let currentHospitalConfig = null;
 let currentMapping = null;
 let currentParser = null;
@@ -47,7 +59,7 @@ async function loadAppConfig() {
         // Spezielle Buttons aktualisieren
         const sendBtn = document.getElementById('sendToMaintainerBtn');
         if (sendBtn) {
-            sendBtn.innerHTML = `📧 An Maintainer senden (${appConfig.maintainerEmail})`;
+            sendBtn.textContent = `📧 An Maintainer senden (${appConfig.maintainerEmail})`;
         }
     } catch (e) {
         console.warn('Konnte config.json nicht laden, verwende Defaults:', e);
@@ -357,15 +369,15 @@ async function renderShiftTypesList(currentShiftTypes) {
             row.innerHTML = `
                 <div class="flex items-center gap-1 bg-white border rounded px-1 ${isSpecial ? 'opacity-50 grayscale' : ''}">
                     <input type="text" class="edit-start w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${startTime}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
+                           value="${escapeHtml(startTime)}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
                     <span class="text-gray-400">-</span>
                     <input type="text" class="edit-end w-12 text-xs border-none p-0 focus:ring-0 text-center" 
-                           value="${endTime}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
+                           value="${escapeHtml(endTime)}" placeholder="${isSpecial ? '---' : '00:00'}" maxlength="5" ${isSpecial ? 'disabled' : ''}>
                 </div>
                 <div class="relative group">
                     <input type="text" class="edit-code w-12 text-xs border rounded px-1 font-bold text-center transition-colors" 
-                           value="${code}" placeholder="Code" 
-                           style="background-color: ${currentColor}; color: ${contrastColor}; border-color: ${currentColor}">
+                           value="${escapeHtml(code)}" placeholder="Code" 
+                           style="background-color: ${escapeHtml(currentColor)}; color: ${escapeHtml(contrastColor)}; border-color: ${escapeHtml(currentColor)}">
                 </div>
                 <div class="flex items-center gap-2 flex-1 min-w-[100px]">
                     <!-- Aktive Farbe / Palette Toggle -->
@@ -374,19 +386,19 @@ async function renderShiftTypesList(currentShiftTypes) {
                             ${Object.entries(googleColors).map(([id, hex]) => `
                                 <button type="button" 
                                         class="color-swatch w-6 h-6 rounded shadow-sm transition-all hover:scale-110 ${currentColor.toLowerCase() === hex.toLowerCase() ? 'ring-2 ring-gray-800 ring-offset-1' : ''}" 
-                                        style="background-color: ${hex}" 
-                                        data-color="${hex}" 
-                                        title="Google Farbe ${id}">
+                                        style="background-color: ${escapeHtml(hex)}" 
+                                        data-color="${escapeHtml(hex)}" 
+                                        title="Google Farbe ${escapeHtml(id)}">
                                 </button>
                             `).join('')}
                             <div class="w-full h-px bg-gray-100 my-1"></div>
                             <div class="relative w-full h-8 overflow-hidden rounded border border-gray-300">
-                                <input type="color" class="absolute -inset-1 w-full h-12 p-0 border-none bg-transparent cursor-pointer" value="${currentColor}">
+                                <input type="color" class="absolute -inset-1 w-full h-12 p-0 border-none bg-transparent cursor-pointer" value="${escapeHtml(currentColor)}">
                                 <div class="absolute inset-0 flex items-center justify-center pointer-events-none text-[10px] font-bold mix-blend-difference text-white">Eigene Farbe</div>
                             </div>
                         </div>
                         <button type="button" class="palette-toggle w-8 h-8 rounded-md border-2 border-white shadow-sm transition-transform hover:scale-105" 
-                                style="background-color: ${currentColor}">
+                                style="background-color: ${escapeHtml(currentColor)}">
                         </button>
                     </div>
                 </div>
@@ -536,16 +548,27 @@ async function renderShiftTypesList(currentShiftTypes) {
             if (timeRange === 'SPECIAL:KRANK') label += ' <span class="text-[10px] text-gray-400 ml-1">(Krank)</span>';
 
             const tr = document.createElement('tr');
+            const codeCell = document.createElement('td');
+            codeCell.className = 'pr-2 font-bold';
+            codeCell.style.color = color;
+            codeCell.textContent = code;
+            if (isValidated) {
+                const checkmark = document.createElement('span');
+                checkmark.title = 'Validiert';
+                checkmark.className = 'ml-1 text-blue-500';
+                checkmark.textContent = '✓';
+                codeCell.appendChild(checkmark);
+            }
+            
             tr.innerHTML = `
                 <td class="w-8 py-1">
-                    <div class="w-4 h-4 rounded-full" style="background-color: ${color}"></div>
+                    <div class="w-4 h-4 rounded-full" style="background-color: ${escapeHtml(color)}"></div>
                 </td>
-                <td class="pr-2 font-bold" style="color: ${color}">
-                    ${code}
-                    ${isValidated ? '<span title="Validiert" class="ml-1 text-blue-500">✓</span>' : ''}
-                </td>
-                <td>${label}</td>
             `;
+            tr.appendChild(codeCell);
+            const labelCell = document.createElement('td');
+            labelCell.innerHTML = label; // label already contains safe HTML from our code
+            tr.appendChild(labelCell);
             table.appendChild(tr);
         });
         previewDiv.appendChild(table);
@@ -582,7 +605,7 @@ initPDFLoad({
                         pageText = lines.join('\n');
                     }
                 } catch (e) {
-                    console.warn('Fehler bei Extraktion auf Seite ' + pageNum, e);
+                    console.warn('Fehler bei Extraktion auf Seite', pageNum, e);
                 }
                 pdfText += (pdfText ? '\n' : '') + pageText;
             }
@@ -681,9 +704,9 @@ window.addEventListener('DOMContentLoaded', () => {
         copyToClipboardBtn.addEventListener('click', () => {
             const content = document.getElementById('rawTextOutput').textContent;
             navigator.clipboard.writeText(content).then(() => {
-                const originalText = copyToClipboardBtn.innerHTML;
-                copyToClipboardBtn.innerHTML = '<span>Kopiert!</span>';
-                setTimeout(() => { copyToClipboardBtn.innerHTML = originalText; }, 2000);
+                const originalText = copyToClipboardBtn.textContent;
+                copyToClipboardBtn.textContent = 'Kopiert!';
+                setTimeout(() => { copyToClipboardBtn.textContent = originalText; }, 2000);
             });
         });
     }

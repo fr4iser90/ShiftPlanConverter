@@ -1,6 +1,18 @@
 import { loadSpecialShiftTypes } from './shiftTypesLoader.js';
 
 /**
+ * Escapes HTML special characters to prevent XSS attacks
+ * @param {string} str - String to escape
+ * @returns {string} - Escaped string
+ */
+function escapeHtml(str) {
+    if (str == null) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+/**
  * preview.js
  * Stellt die konvertierten Dienstplan-Einträge als Vorschau im UI dar.
  * Exportiert renderPreview(entries).
@@ -14,7 +26,11 @@ export async function renderPreview(entries, currentMapping = null, currentPrese
     updateMissingShiftsUI(entries, currentMapping, currentPreset);
 
     if (!entries || entries.length === 0) {
-        previewContent.innerHTML = '<div class="text-gray-400 italic">Keine Einträge vorhanden.</div>';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'text-gray-400 italic';
+        emptyDiv.textContent = 'Keine Einträge vorhanden.';
+        previewContent.innerHTML = '';
+        previewContent.appendChild(emptyDiv);
         return;
     }
 
@@ -78,12 +94,12 @@ export async function renderPreview(entries, currentMapping = null, currentPrese
 
         html += `
             <tr>
-                <td class="border px-2 py-1">${displayDate}</td>
-                <td class="border px-2 py-1 text-center font-bold" style="color: ${finalColor}">
+                <td class="border px-2 py-1">${escapeHtml(displayDate)}</td>
+                <td class="border px-2 py-1 text-center font-bold" style="color: ${escapeHtml(finalColor)}">
                     ${dotHtml}${typeDisplay}
                 </td>
-                <td class="border px-2 py-1">${entry.allDay ? '<span class="text-[10px] text-gray-400 uppercase tracking-widest">Ganztägig</span>' : (entry.start || '')}</td>
-                <td class="border px-2 py-1">${entry.allDay ? '' : (entry.end || '')}</td>
+                <td class="border px-2 py-1">${entry.allDay ? '<span class="text-[10px] text-gray-400 uppercase tracking-widest">Ganztägig</span>' : escapeHtml(entry.start || '')}</td>
+                <td class="border px-2 py-1">${entry.allDay ? '' : escapeHtml(entry.end || '')}</td>
             </tr>
         `;
     });
@@ -124,7 +140,13 @@ function updateMissingShiftsUI(entries, mapping, preset) {
         missingShifts.forEach(shift => {
             const badge = document.createElement('div');
             badge.className = 'bg-white border border-yellow-400 text-yellow-800 px-2 py-1 rounded text-xs font-mono shadow-sm flex items-center gap-2';
-            badge.innerHTML = `<span>${shift}</span> <span class="opacity-50">→ ?</span>`;
+            const shiftSpan = document.createElement('span');
+            shiftSpan.textContent = shift;
+            badge.appendChild(shiftSpan);
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'opacity-50';
+            arrowSpan.textContent = ' → ?';
+            badge.appendChild(arrowSpan);
             list.appendChild(badge);
         });
         container.style.display = 'block';
