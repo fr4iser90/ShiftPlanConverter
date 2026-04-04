@@ -7,7 +7,7 @@ import { loadHospitalConfig, loadMapping, loadHospitalParser, loadSpecialShiftTy
 import { initPDFLoad } from './pdfLoader.js';
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
-import { initGoogleCalendar } from './google.js';
+import { initGoogleCalendar, syncToCalendar } from './google.js';
 import { exportToICS } from './icsGenerator.js';
 import { sendStructureFeedback, sendMappingProposal } from './api.js';
 
@@ -669,124 +669,201 @@ async function renderShiftTypesList(currentShiftTypes) {
     }
 }
 
+function entryMergeKey(e) {
+    const ad = e.allDay ? '1' : '0';
+    return `${e.date}|${e.type}|${ad}|${e.start || ''}|${e.end || ''}`;
+}
+
+/** Mehrere Parser-Ergebnisse zusammenführen; bei gleichem Schlüssel gewinnt die spätere Datei (Reihenfolge der Auswahl). */
+function mergeParsedEntryArrays(entryArrays) {
+    const map = new Map();
+    for (const entries of entryArrays) {
+        for (const e of entries) {
+            map.set(entryMergeKey(e), e);
+        }
+    }
+    return Array.from(map.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+async function extractTextFromPdfBuffer(arrayBuffer) {
+    const pdf = await window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+    let pdfText = '';
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        let pageText = '';
+        try {
+            const textContent = await page.getTextContent();
+            if (textContent.items.length > 0) {
+                let lastY = null;
+                const line = [];
+                const lines = [];
+                textContent.items.forEach(item => {
+                    if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
+                        lines.push(line.join(' '));
+                        line.length = 0;
+                    }
+                    line.push(item.str);
+                    lastY = item.transform[5];
+                });
+                if (line.length) lines.push(line.join(' '));
+                pageText = lines.join('\n');
+            }
+        } catch (e) {
+            console.warn('Fehler bei Extraktion auf Seite', pageNum, e);
+        }
+        pdfText += (pdfText ? '\n' : '') + pageText;
+    }
+    return pdfText;
+}
+
+function wireExportButtons() {
+    ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.onclick = (e) => {
+                const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+                if (!entries || entries.length === 0) {
+                    e.preventDefault();
+                    alert('Bitte zuerst einen Dienstplan konvertieren!');
+                } else if (id === 'icsExportBtn') {
+                    exportToICS();
+                } else if (id === 'downloadBtn') {
+                    const csv = convertParsedEntriesToCSV(entries);
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'dienstplan.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 0);
+                } else if (id === 'syncBtn') {
+                    const calendarSelect = document.getElementById('calendarSelect');
+                    if (!calendarSelect || !calendarSelect.value) {
+                        alert('Bitte zuerst mit Google verbinden und einen Kalender wählen.');
+                        return;
+                    }
+                    syncToCalendar(calendarSelect.value);
+                }
+            };
+        }
+    });
+}
+
 initPDFLoad({
-    onPdfLoaded: (arrayBuffer, file) => {
+    onPdfBatchLoaded: async (items) => {
         const previewContent = document.getElementById('previewContent');
-        if (previewContent) {
+        const total = items.length;
+
+        function setLoadingLabel(i, name) {
+            if (!previewContent) return;
+            previewContent.innerHTML = '';
             const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'flex items-center gap-2 text-blue-600';
+            loadingDiv.className = 'flex flex-col gap-1 text-blue-600';
+            const row = document.createElement('div');
+            row.className = 'flex items-center gap-2';
             const spinSpan = document.createElement('span');
             spinSpan.className = 'animate-spin';
             spinSpan.textContent = '⏳';
-            loadingDiv.appendChild(spinSpan);
-            loadingDiv.appendChild(document.createTextNode(' PDF wird analysiert...'));
-            previewContent.innerHTML = '';
+            row.appendChild(spinSpan);
+            row.appendChild(document.createTextNode(` PDF ${i}/${total} wird analysiert…`));
+            loadingDiv.appendChild(row);
+            if (name) {
+                const fn = document.createElement('div');
+                fn.className = 'text-xs text-gray-600 truncate';
+                fn.textContent = name;
+                loadingDiv.appendChild(fn);
+            }
             previewContent.appendChild(loadingDiv);
         }
 
-        window.pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise.then(async function(pdf) {
-            let pdfText = '';
-            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-                const page = await pdf.getPage(pageNum);
-                let pageText = '';
-                try {
-                    const textContent = await page.getTextContent();
-                    if (textContent.items.length > 0) {
-                        let lastY = null;
-                        let line = [];
-                        let lines = [];
-                        textContent.items.forEach(item => {
-                            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 2) {
-                                lines.push(line.join(' '));
-                                line = [];
-                            }
-                            line.push(item.str);
-                            lastY = item.transform[5];
-                        });
-                        if (line.length) lines.push(line.join(' '));
-                        pageText = lines.join('\n');
-                    }
-                } catch (e) {
-                    console.warn('Fehler bei Extraktion auf Seite', pageNum, e);
-                }
-                pdfText += (pdfText ? '\n' : '') + pageText;
+        setLoadingLabel(1, items[0]?.file?.name);
+
+        const presetSelect = document.getElementById('presetSelect');
+        const preset = presetSelect ? presetSelect.value : '';
+        const profession = document.getElementById('professionSelect')?.value;
+        const bereich = document.getElementById('bereichSelect')?.value;
+
+        if (!currentParser) {
+            alert('Fehler: Kein Parser für dieses Krankenhaus gefunden.');
+            if (previewContent) {
+                previewContent.innerHTML = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-500';
+                errorDiv.textContent = 'Fehler: Parser fehlt.';
+                previewContent.appendChild(errorDiv);
             }
+            return;
+        }
 
-            if (!pdfText.trim()) {
-                alert("Fehler: Es konnte kein Text aus dem PDF gelesen werden.");
-                if (previewContent) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'text-red-500';
-                    errorDiv.textContent = 'Fehler: PDF leer oder Bild.';
-                    previewContent.innerHTML = '';
-                    previewContent.appendChild(errorDiv);
+        const entryArrays = [];
+        const failed = [];
+        const rawParts = [];
+
+        for (let idx = 0; idx < items.length; idx++) {
+            const { arrayBuffer, file } = items[idx];
+            setLoadingLabel(idx + 1, file.name);
+            try {
+                const pdfText = await extractTextFromPdfBuffer(arrayBuffer);
+                if (!pdfText.trim()) {
+                    failed.push(`${file.name}: kein lesbarer Text`);
+                    continue;
                 }
-                return;
-            }
-
-            lastRawText = pdfText;
-            const rawTextOutput = document.getElementById('rawTextOutput');
-            if (rawTextOutput) rawTextOutput.textContent = pdfText;
-            const debugArea = document.getElementById('debugArea');
-            if (debugArea) debugArea.style.display = 'block';
-
-            const presetSelect = document.getElementById('presetSelect');
-            const preset = presetSelect ? presetSelect.value : '';
-            const profession = document.getElementById('professionSelect')?.value;
-            const bereich = document.getElementById('bereichSelect')?.value;
-            
-            if (!currentParser) {
-                alert("Fehler: Kein Parser für dieses Krankenhaus gefunden.");
-                if (previewContent) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'text-red-500';
-                    errorDiv.textContent = 'Fehler: Parser fehlt.';
-                    previewContent.innerHTML = '';
-                    previewContent.appendChild(errorDiv);
+                rawParts.push(`\n\n--- ${file.name} ---\n\n${pdfText}`);
+                const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
+                if (!parsed.entries || parsed.entries.length === 0) {
+                    failed.push(`${file.name}: keine Schichten erkannt`);
+                } else {
+                    entryArrays.push(parsed.entries);
                 }
-                return;
+            } catch (err) {
+                console.error(file.name, err);
+                failed.push(`${file.name}: ${err.message || err}`);
             }
+        }
 
-            const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
-            localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-            await renderPreview(parsed.entries, currentMapping, preset);
-
-            // Automatisch zum Export-Bereich scrollen
-            const exportSection = document.getElementById('exportSection');
-            if (exportSection) {
-                exportSection.scrollIntoView({ behavior: 'smooth' });
+        if (entryArrays.length === 0) {
+            const msg = failed.length
+                ? `Keine verwertbaren PDFs.\n${failed.join('\n')}`
+                : 'Keine Einträge gefunden.';
+            alert(msg);
+            if (previewContent) {
+                previewContent.innerHTML = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-500';
+                errorDiv.textContent = 'Keine Einträge – siehe Meldung.';
+                previewContent.appendChild(errorDiv);
             }
+            return;
+        }
 
-            ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn) {
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                    btn.onclick = (e) => {
-                        const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
-                        if (!entries || entries.length === 0) {
-                            e.preventDefault();
-                            alert('Bitte zuerst einen Dienstplan konvertieren!');
-                        } else if (id === 'icsExportBtn') {
-                            exportToICS();
-                        } else if (id === 'downloadBtn') {
-                            const csv = convertParsedEntriesToCSV(entries);
-                            const blob = new Blob([csv], { type: 'text/csv' });
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = 'dienstplan.csv';
-                            document.body.appendChild(a);
-                            a.click();
-                            setTimeout(() => {
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                            }, 0);
-                        }
-                    };
-                }
-            });
-        });
+        const merged = mergeParsedEntryArrays(entryArrays);
+        lastRawText = rawParts.join('');
+        const rawTextOutput = document.getElementById('rawTextOutput');
+        if (rawTextOutput) rawTextOutput.textContent = lastRawText;
+        const debugArea = document.getElementById('debugArea');
+        if (debugArea) debugArea.style.display = 'block';
+
+        localStorage.setItem('parsedEntries', JSON.stringify(merged));
+        await renderPreview(merged, currentMapping, preset);
+
+        if (failed.length) {
+            alert(
+                `${merged.length} Einträge aus ${entryArrays.length} PDF(s).\n\nHinweise:\n${failed.join('\n')}`
+            );
+        }
+
+        const exportSection = document.getElementById('exportSection');
+        if (exportSection) {
+            exportSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        wireExportButtons();
     }
 });
 

@@ -191,7 +191,7 @@ async function insertEvent(calendarId, event) {
     return await resp.json();
 }
 
-async function syncToCalendar(calendarId) {
+export async function syncToCalendar(calendarId) {
     const syncBtn = document.getElementById('syncBtn');
     if (!syncBtn) return;
 
