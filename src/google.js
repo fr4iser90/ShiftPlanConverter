@@ -2,10 +2,24 @@
  * googleCalendar.js
  * Handles Google Calendar integration using Google Identity Services (GIS) and direct REST API calls.
  * Migration: gapi.client is deprecated for new projects. All calendar operations now use fetch + OAuth2 access token.
+ *
+ * Persistenz: Client ID + gewählter Kalender in localStorage.
+ * Access-Token wird NICHT gespeichert – nach Reload stilles Re-Auth (prompt: '').
  */
+
+const STORAGE = {
+    clientId: 'googleClientId',
+    calendarId: 'googleCalendarId',
+};
+
+const CALENDAR_SCOPES =
+    'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
 
 let tokenClient = null;
 let accessToken = null;
+let currentClientId = null;
+/** @type {{ resolve: (v: unknown) => void, reject: (e: unknown) => void } | null} */
+let pendingAuth = null;
 
 export function initGoogleCalendar() {
     const clientIdInput = document.getElementById('googleClientId');
@@ -16,8 +30,26 @@ export function initGoogleCalendar() {
 
     if (!clientIdInput || !connectBtn || !syncBtn) return;
 
-    // Initially hide sync button
     syncBtn.style.display = 'none';
+
+    const savedClientId = localStorage.getItem(STORAGE.clientId);
+    if (savedClientId) {
+        clientIdInput.value = savedClientId;
+    }
+
+    clientIdInput.addEventListener('change', () => {
+        const value = clientIdInput.value.trim();
+        if (value) localStorage.setItem(STORAGE.clientId, value);
+        else localStorage.removeItem(STORAGE.clientId);
+    });
+
+    if (calendarSelect) {
+        calendarSelect.addEventListener('change', () => {
+            if (calendarSelect.value) {
+                localStorage.setItem(STORAGE.calendarId, calendarSelect.value);
+            }
+        });
+    }
 
     connectBtn.addEventListener('click', async () => {
         const clientId = clientIdInput.value.trim();
@@ -26,44 +58,30 @@ export function initGoogleCalendar() {
             return;
         }
 
+        localStorage.setItem(STORAGE.clientId, clientId);
         connectBtn.disabled = true;
         connectBtn.textContent = 'Verbinde...';
 
         try {
-            // Initialize token client if not already done
-            if (!tokenClient) {
-                tokenClient = google.accounts.oauth2.initTokenClient({
-                    client_id: clientId,
-                    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
-                    callback: async (tokenResponse) => {
-                        if (tokenResponse && tokenResponse.access_token) {
-                            accessToken = tokenResponse.access_token;
-                            await afterGoogleLogin();
-                        } else {
-                            alert('Fehler beim Abrufen des Zugriffstokens.');
-                            connectBtn.disabled = false;
-                            connectBtn.textContent = 'Mit Google verbinden';
-                        }
-                    },
-                });
-            }
-            // Request access token
-            tokenClient.requestAccessToken();
+            await ensureGoogleLoaded();
+            await requestAccessToken(clientId, { interactive: true });
         } catch (error) {
             console.error('Google Calendar integration error:', error);
-            connectBtn.disabled = false;
-            connectBtn.textContent = 'Mit Google verbinden';
+            resetConnectButton(connectBtn);
             alert('Fehler bei der Google-Authentifizierung. Bitte versuchen Sie es erneut.');
         }
     });
 
+    // Stilles Re-Auth nach Reload, wenn Client ID bekannt (kein Token speichern)
+    if (savedClientId) {
+        attemptSilentReconnect(savedClientId, connectBtn);
+    }
+
     async function afterGoogleLogin() {
         try {
-            // Kalenderliste abrufen
             const calendars = await fetchCalendarList();
             if (!calendars) throw new Error('Keine Kalender gefunden.');
 
-            // Kalenderauswahl-Dropdown befüllen
             if (calendarSelect) {
                 calendarSelect.innerHTML = '';
                 calendars.forEach(cal => {
@@ -72,9 +90,18 @@ export function initGoogleCalendar() {
                     opt.textContent = cal.summary || cal.id;
                     calendarSelect.appendChild(opt);
                 });
+
+                const savedCalendarId = localStorage.getItem(STORAGE.calendarId);
+                if (savedCalendarId && calendars.some(c => c.id === savedCalendarId)) {
+                    calendarSelect.value = savedCalendarId;
+                } else if (calendars[0]) {
+                    localStorage.setItem(STORAGE.calendarId, calendars[0].id);
+                }
+
                 calendarSelect.style.display = '';
                 calendarSelect.disabled = false;
             }
+
             if (createCalendarBtn) {
                 createCalendarBtn.style.display = '';
                 createCalendarBtn.disabled = false;
@@ -92,7 +119,10 @@ export function initGoogleCalendar() {
                             calendarSelect.appendChild(opt);
                         });
                         const created = newCalendars.find(cal => cal.summary === calendarName);
-                        if (created) calendarSelect.value = created.id;
+                        if (created) {
+                            calendarSelect.value = created.id;
+                            localStorage.setItem(STORAGE.calendarId, created.id);
+                        }
                         alert('Neuer Kalender erfolgreich angelegt!');
                     } catch (e) {
                         alert('Fehler beim Anlegen des Kalenders: ' + (e.message || e));
@@ -100,25 +130,120 @@ export function initGoogleCalendar() {
                 };
             }
 
-            // Show and enable sync button
             syncBtn.style.display = '';
             syncBtn.disabled = false;
             syncBtn.onclick = () => {
                 const selectedCalendarId = calendarSelect ? calendarSelect.value : calendars[0].id;
+                if (selectedCalendarId) {
+                    localStorage.setItem(STORAGE.calendarId, selectedCalendarId);
+                }
                 syncToCalendar(selectedCalendarId);
             };
 
-            // Update connect button
+            connectBtn.disabled = false;
             connectBtn.textContent = 'Verbunden';
             connectBtn.classList.remove('bg-blue-500');
             connectBtn.classList.add('bg-green-500');
         } catch (error) {
             console.error('Calendar list error:', error);
+            accessToken = null;
+            resetConnectButton(connectBtn);
             alert('Fehler beim Abrufen der Kalenderliste.');
-            connectBtn.disabled = false;
-            connectBtn.textContent = 'Mit Google verbinden';
         }
     }
+
+    /**
+     * @param {string} clientId
+     * @param {{ interactive: boolean }} options
+     */
+    function requestAccessToken(clientId, { interactive }) {
+        return new Promise((resolve, reject) => {
+            if (!window.google?.accounts?.oauth2) {
+                reject(new Error('Google Identity Services nicht geladen'));
+                return;
+            }
+
+            pendingAuth = { resolve, reject };
+
+            if (!tokenClient || currentClientId !== clientId) {
+                currentClientId = clientId;
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: clientId,
+                    scope: CALENDAR_SCOPES,
+                    callback: async (tokenResponse) => {
+                        const pending = pendingAuth;
+                        pendingAuth = null;
+                        if (tokenResponse && tokenResponse.access_token) {
+                            accessToken = tokenResponse.access_token;
+                            try {
+                                await afterGoogleLogin();
+                                pending?.resolve(tokenResponse);
+                            } catch (e) {
+                                pending?.reject(e);
+                            }
+                        } else {
+                            pending?.reject(new Error('Kein Zugriffstoken erhalten'));
+                        }
+                    },
+                    error_callback: (err) => {
+                        const pending = pendingAuth;
+                        pendingAuth = null;
+                        pending?.reject(err || new Error('OAuth-Fehler'));
+                    },
+                });
+            }
+
+            if (interactive) {
+                tokenClient.requestAccessToken();
+            } else {
+                tokenClient.requestAccessToken({ prompt: '' });
+            }
+        });
+    }
+
+    async function attemptSilentReconnect(clientId, btn) {
+        btn.disabled = true;
+        btn.textContent = 'Verbinde...';
+        try {
+            await ensureGoogleLoaded();
+            await requestAccessToken(clientId, { interactive: false });
+        } catch (e) {
+            // Kein vorheriger Consent / Session abgelaufen – kein Alarm, User kann manuell verbinden
+            console.info('Stilles Re-Auth nicht möglich, manuelle Verbindung nötig.', e);
+            accessToken = null;
+            resetConnectButton(btn);
+        }
+    }
+}
+
+function resetConnectButton(connectBtn) {
+    if (!connectBtn) return;
+    connectBtn.disabled = false;
+    connectBtn.textContent = 'Mit Google verbinden';
+    connectBtn.classList.add('bg-blue-500');
+    connectBtn.classList.remove('bg-green-500');
+}
+
+function ensureGoogleLoaded() {
+    return new Promise((resolve, reject) => {
+        if (window.google?.accounts?.oauth2) {
+            resolve();
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100; // ~5s
+        const interval = setInterval(() => {
+            attempts++;
+            if (window.google?.accounts?.oauth2) {
+                clearInterval(interval);
+                resolve();
+            } else if (attempts >= maxAttempts) {
+                clearInterval(interval);
+                reject(new Error('Google Identity Services Timeout'));
+            }
+        }, 50);
+    });
 }
 
 // --- Google Calendar REST API Calls ---
@@ -150,7 +275,6 @@ async function createCalendar(summary) {
 }
 
 async function deleteEventsInRange(calendarId, timeMin, timeMax) {
-    // List events in range
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}&singleEvents=true&maxResults=2500`;
     const resp = await fetch(url, {
         headers: {
@@ -199,18 +323,25 @@ export async function syncToCalendar(calendarId) {
         syncBtn.disabled = true;
         syncBtn.textContent = 'Synchronisiere...';
 
+        if (!accessToken) {
+            alert('Bitte zuerst mit Google verbinden.');
+            return;
+        }
+
+        if (calendarId) {
+            localStorage.setItem(STORAGE.calendarId, calendarId);
+        }
+
         const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
         if (!entries || entries.length === 0) {
             alert('Keine Einträge zum Synchronisieren gefunden.');
             return;
         }
 
-        // Zeitraum bestimmen (frühestes und spätestes Datum)
         const dates = entries.map(e => e.date).filter(Boolean).sort();
         const startDate = dates[0];
         const endDate = dates[dates.length - 1];
 
-        // Vorher alle Events im Zeitraum löschen ("Clear & Create")
         let deletedCount = 0;
         if (startDate && endDate) {
             const timeMin = `${startDate}T00:00:00+01:00`;
@@ -219,20 +350,16 @@ export async function syncToCalendar(calendarId) {
         }
 
         let successCount = 0;
-        
-        // Farben aus localStorage ODER aus der aktuellen Konfiguration laden
+
         const storedColors = JSON.parse(localStorage.getItem('shiftColors') || '{}');
-        // Wir versuchen, die Farben so zu laden, wie sie in der UI angezeigt werden
         const colors = { ...storedColors };
 
         for (const entry of entries) {
-            // Titel: Code + Zeit (falls vorhanden)
             let summary = entry.type;
             if (!entry.allDay && entry.start && entry.end) {
                 summary += ` ${entry.start}–${entry.end}`;
             }
 
-            // Beschreibung: Hinweis + Originaldaten
             let description = "Automatisch importiert aus Dienstplan – keine Gewähr.";
             if (entry.allDay) {
                 description += `\nOriginal: ${entry.type}`;
@@ -240,7 +367,6 @@ export async function syncToCalendar(calendarId) {
                 description += `\nOriginal: ${entry.type}, ${entry.start}, ${entry.end}`;
             }
 
-            // Korrektur: Enddatum auf Folgetag setzen, wenn Endzeit < Startzeit (über Mitternacht)
             let endDate = entry.date;
             if (!entry.allDay && entry.start && entry.end && entry.end < entry.start) {
                 const d = new Date(entry.date);
@@ -265,7 +391,6 @@ export async function syncToCalendar(calendarId) {
                 }
             };
 
-            // Farbe hinzufügen, falls vorhanden
             if (colors[entry.type]) {
                 const hex = colors[entry.type];
                 const googleColorId = mapHexToGoogleColorId(hex);
@@ -290,48 +415,38 @@ export async function syncToCalendar(calendarId) {
 
 /**
  * Mappt eine Hex-Farbe auf die ähnlichste Google Calendar Color ID (1-11).
- * @param {string} hex 
+ * @param {string} hex
  * @returns {string|null} colorId
  */
 function mapHexToGoogleColorId(hex) {
     if (!hex) return null;
-    
-    // Google Event Colors (from API)
+
     const googleColors = {
-        "1": "#a4bdfc",  // Lavendel
-        "2": "#7ae7bf",  // Salbei
-        "3": "#dbadff",  // Traube
-        "4": "#ff887c",  // Flamingo
-        "5": "#fbd75b",  // Banane
-        "6": "#ffb878",  // Mandarine
-        "7": "#46d6db",  // Pfau
-        "8": "#e1e1e1",  // Graphit
-        "9": "#5484ed",  // Heidelbeere
-        "10": "#51b749", // Basilikum
-        "11": "#dc2127"  // Tomate
+        "1": "#a4bdfc",
+        "2": "#7ae7bf",
+        "3": "#dbadff",
+        "4": "#ff887c",
+        "5": "#fbd75b",
+        "6": "#ffb878",
+        "7": "#46d6db",
+        "8": "#e1e1e1",
+        "9": "#5484ed",
+        "10": "#51b749",
+        "11": "#dc2127"
     };
 
-    // Einfaches Mapping für bekannte Standard-Hex-Werte oder Distanzberechnung
     const target = hex.toLowerCase();
-    
-    // 1. Direkte Treffer (falls der Nutzer eine Google-Farbe gewählt hat)
+
     for (const [id, gHex] of Object.entries(googleColors)) {
         if (gHex.toLowerCase() === target) return id;
     }
 
-    // 2. Heuristik für typische Dienstplan-Farben
-    // Grüntöne (Frühschicht)
-    if (target.match(/#(22c55e|4ade80|86efac|bbf7d0|51b749|2ecc71|27ae60)/)) return "10"; 
-    // Gelbtöne (Spätschicht)
+    if (target.match(/#(22c55e|4ade80|86efac|bbf7d0|51b749|2ecc71|27ae60)/)) return "10";
     if (target.match(/#(eab308|facc15|fef08a|fbd75b|f1c40f|f39c12)/)) return "5";
-    // Blautöne (Mittelschicht)
     if (target.match(/#(3b82f6|60a5fa|93c5fd|5484ed|3498db|2980b9)/)) return "9";
-    // Rottöne (Nachtschicht)
     if (target.match(/#(ef4444|f87171|dc2626|dc2127|e74c3c|c0392b)/)) return "11";
-    // Lila (Spezial)
     if (target.match(/#(8b5cf6|a78bfa|dbadff|9b59b6|8e44ad)/)) return "3";
 
-    // 3. Fallback: Distanzberechnung (Euklidisch im RGB-Raum)
     return findClosestColor(target, googleColors);
 }
 
@@ -354,7 +469,7 @@ function findClosestColor(targetHex, palette) {
     for (const [id, hex] of Object.entries(palette)) {
         const rgb = hexToRgb(hex);
         if (!rgb) continue;
-        
+
         const distance = Math.sqrt(
             Math.pow(targetRgb.r - rgb.r, 2) +
             Math.pow(targetRgb.g - rgb.g, 2) +

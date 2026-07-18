@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impressum – Dienstplan Konverter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="mb-6">
+            <a href="index.html" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span>&larr;</span> Zurück zur Hauptseite
+            </a>
+        </div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Impressum</h1>
+            <div class="flex items-center gap-2">
+                <button id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus (Standard)">☀️</button>
+                <button id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+            </div>
+        </div>
+
+        <section class="mb-8 space-y-4 text-gray-700">
+            <p class="text-sm text-gray-500">Angaben gemäß § 5 DDG</p>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Diensteanbieter</h2>
+                <p>
+                    VORNAME NACHNAME<br>
+                    STRASSE HAUSNUMMER<br>
+                    PLZ ORT
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Kontakt</h2>
+                <p>
+                    E-Mail:
+                    <a href="mailto:EMAIL@EXAMPLE.COM" class="text-blue-500 hover:underline">EMAIL@EXAMPLE.COM</a>
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Hinweis</h2>
+                <p class="text-sm">
+                    Dieses Tool ist ein privates Projekt und steht in keiner offiziellen Verbindung zu den genannten Krankenhäusern.
+                    Alle Daten werden ausschließlich lokal im Browser verarbeitet.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            function setTheme(theme) {
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                if (theme) body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            setTheme(localStorage.getItem('theme') || 'theme-light');
+
+            ['themeLightBtn', 'themeDarkBtn', 'themeSepiaBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.addEventListener('click', () => setTheme(id.replace('Btn', '').replace('theme', 'theme-').toLowerCase()));
+            });
+        });
+    </script>
+</body>
+</html>
