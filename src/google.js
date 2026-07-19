@@ -7,6 +7,9 @@
  * Access-Token wird NICHT gespeichert – nach Reload stilles Re-Auth (prompt: '').
  */
 
+import { buildEventDescription } from './eventDescription.js';
+import { isRichEventDetailsEnabled } from './monthSummary.js';
+
 const STORAGE = {
     clientId: 'googleClientId',
     calendarId: 'googleCalendarId',
@@ -360,12 +363,9 @@ export async function syncToCalendar(calendarId) {
                 summary += ` ${entry.start}–${entry.end}`;
             }
 
-            let description = "Automatisch importiert aus Dienstplan – keine Gewähr.";
-            if (entry.allDay) {
-                description += `\nOriginal: ${entry.type}`;
-            } else {
-                description += `\nOriginal: ${entry.type}, ${entry.start}, ${entry.end}`;
-            }
+            let description = buildEventDescription(entry, {
+                richDetails: isRichEventDetailsEnabled(),
+            });
 
             let endDate = entry.date;
             if (!entry.allDay && entry.start && entry.end && entry.end < entry.start) {

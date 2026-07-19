@@ -10,6 +10,7 @@ import { renderPreview } from './preview.js';
 import { initGoogleCalendar, syncToCalendar } from './google.js';
 import { exportToICS } from './icsGenerator.js';
 import { sendStructureFeedback, sendMappingProposal } from './api.js';
+import { initOptionalDataPrefs, saveMonthSummaries, renderMonthSummariesFromStorage, extractMonthSummariesFromText } from './monthSummary.js';
 
 /**
  * Escapes HTML special characters to prevent XSS attacks
@@ -140,6 +141,7 @@ async function refreshPreview() {
 
     const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser);
     localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+    saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
     await renderPreview(parsed.entries, currentMapping, preset);
 }
 
@@ -850,6 +852,7 @@ initPDFLoad({
         if (debugArea) debugArea.style.display = 'block';
 
         localStorage.setItem('parsedEntries', JSON.stringify(merged));
+        saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
         await renderPreview(merged, currentMapping, preset);
 
         if (failed.length) {
@@ -974,6 +977,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
     reloadHospitalAndUI();
     initGoogleCalendar();
+    initOptionalDataPrefs();
+    renderMonthSummariesFromStorage();
     loadAppConfig();
 
     // Hilfe-Modal Logik

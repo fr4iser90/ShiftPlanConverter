@@ -10,10 +10,17 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
     }
 
     // 1. Roh-Daten mit dem spezifischen Parser extrahieren
-    const { year, month, mainEntries: rawMain, bereitschaftEntries: rawBereitschaft } = parserFn(pdfText);
+    const {
+        year,
+        month,
+        mainEntries: rawMain,
+        bereitschaftEntries: rawBereitschaft,
+        summary = null,
+        summaries = null,
+    } = parserFn(pdfText);
 
     if (!year || !month) {
-        return { entries: [], year: null, month: null };
+        return { entries: [], year: null, month: null, summary: null, summaries: [] };
     }
 
     const mapping = (hospitalMapping && hospitalMapping.presets && hospitalMapping.presets[preset]) || {};
@@ -90,7 +97,9 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
                 date: mainEntry.date,
                 start: mainEntry.start,
                 end: chain[chain.length - 1].end,
-                isValidated: isValidated
+                isValidated: isValidated,
+                ...pickDayDetails(mainEntry),
+                ...pickBereitschaftDetails(chain.slice(1)),
             });
             handledMainIndices.add(m);
         }
@@ -126,7 +135,8 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
             date: entry.date,
             start: entry.start,
             end: entry.end,
-            isValidated: isValidated
+            isValidated: isValidated,
+            ...pickDayDetails(entry),
         });
     }
 
@@ -142,12 +152,43 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
             date: item.date,
             start: item.start,
             end: item.end,
-            isValidated: !!mappingValue?.isValidated
+            isValidated: !!mappingValue?.isValidated,
+            ...pickDayDetails(item),
+            ...(item.bereitPercent != null ? { bereitPercent: item.bereitPercent } : {}),
+            ...(item.bewertet != null ? { bewertet: item.bewertet } : {}),
         });
     }
 
     finalEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
-    return { entries: finalEntries, year, month };
+    const allSummaries = Array.isArray(summaries) && summaries.length
+        ? summaries
+        : (summary ? [summary] : []);
+    return {
+        entries: finalEntries,
+        year,
+        month,
+        summary: allSummaries[allSummaries.length - 1] || null,
+        summaries: allSummaries,
+    };
+}
+
+function pickDayDetails(entry) {
+    const details = {};
+    if (entry.pause != null) details.pause = entry.pause;
+    if (entry.ist != null) details.ist = entry.ist;
+    if (entry.azkDaily != null) details.azkDaily = entry.azkDaily;
+    if (entry.pepSoll != null) details.pepSoll = entry.pepSoll;
+    if (entry.vertrSoll != null) details.vertrSoll = entry.vertrSoll;
+    return details;
+}
+
+function pickBereitschaftDetails(chainParts) {
+    const withMeta = chainParts.find(p => p.bereitPercent != null || p.bewertet != null);
+    if (!withMeta) return {};
+    const details = {};
+    if (withMeta.bereitPercent != null) details.bereitPercent = withMeta.bereitPercent;
+    if (withMeta.bewertet != null) details.bewertet = withMeta.bewertet;
+    return details;
 }
 
 export function convertParsedEntriesToCSV(entries) {

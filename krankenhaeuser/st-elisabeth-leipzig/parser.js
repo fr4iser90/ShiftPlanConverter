@@ -1,84 +1,182 @@
 /**
  * Spezifischer Parser für das St. Elisabeth Krankenhaus Leipzig.
- * Implementiert die Regex-Logik für deren PDF-Format.
+ * Implementiert die Regex-Logik für deren PDF-Format (Zeitabrechnung).
  */
 export function parseStElisabeth(text) {
-    const lines = text.split('\n');
+    const lines = text.normalize('NFC').split('\n');
     const mainEntries = [];
     const bereitschaftEntries = [];
     let currentYear = '';
     let currentMonth = '';
 
-    // Regex patterns spezifisch für St. Elisabeth
-    const monthYearRegex = /Abrechnungsmonat\s+(\d{2})\/(\d{4})/;
-    const shiftRegex = /^\s*(\d{2})\s+\w+\s+KO\*\s+(\d{2}:\d{2})\s+GE\*\s+(\d{2}:\d{2})/;
-    const vacationRegex = /^\s*(\d{2})\s+\w+\s+(URLTV|URLAUB|U)/i;
-    const krankRegex = /^\s*(\d{2})\s+\w+\s+(KRANK|K|KR)/i;
-    const holidayRegex = /^\s*(\d{2})\s+\w+\*?\s+FEIER/i;
-    const onCallBereitschaftRegex = /^\s*(\d{2}\.\d{2}\.\d{4})\s+.*?(\d{2}:\d{2})\s+(\d{2}:\d{2})/;
-    const bereitSectioRegex = /Bereitschaftsdienste/;
+    const monthYearRegex = /Abrechnungsmonat\s+(\d{2})\/(\d{4})/i;
+    // Tag + KO*/GE* + Pause, PEP-Soll, Vertr.-Soll, Ist, AZK tägl., AZK kum.
+    const shiftRegex = /^\s*(\d{2})\s+\S+\s+KO\*\s+(\d{2}:\d{2})\s+GE\*\s+(\d{2}:\d{2})(?:\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([+-]?[\d,]+)\s+([\d,]+))?/;
+    const vacationRegex = /^\s*(\d{2})\s+\S+\s+(URLTV|URLAUB)\b/i;
+    const krankRegex = /^\s*(\d{2})\s+\S+\s+(KRANK|KR)\b/i;
+    const holidayRegex = /^\s*(\d{2})\s+\S+\s+FEIER/i;
+    // Bereitschaft: Datum … geplant von/bis … Nr. Prozent Bewertet
+    const onCallBereitschaftRegex = /^\s*(\d{2}\.\d{2}\.\d{4})\s+.*?(\d{2}:\d{2})\s+(\d{2}:\d{2}).*?(\d+)\s+(\d+)\s+([\d,]+)\s*$/;
+    const onCallBereitschaftFallback = /^\s*(\d{2}\.\d{2}\.\d{4})\s+.*?(\d{2}:\d{2})\s+(\d{2}:\d{2})/;
+    const bereitSectioRegex = /Bereitschaftsdienste/i;
+
+    // PDF.js variiert Abstände/Umlaute – möglichst tolerant
+    const uebertragVonRegex = /(?:Ü|Ue|U)bertrag\s+aus\s+Vormonat\s+([+-]?[\d,]+)/i;
+    const uebertragNachRegex = /(?:Ü|Ue|U)bertrag\s+in\s+Folgemonat\s+([+-]?[\d,]+)/i;
+    const periodeRegex = /Periode\s*\([^)]+\)\s+([\d,]+)\s+([\d,]+)\s+([\d,]+)\s+([+-]?[\d,]+)/i;
+    const auszahlungRegex = /Bereitschaft\s+zur\s+Auszahlung\s+([+-]?[\d,]+)/i;
+    const bereitAzkRegex = /Bereitschaft\s+in\s+das\s+AZK\s+([+-]?[\d,]+)/i;
+
+    const summaries = [];
+    let summary = newSummary();
 
     let inBereitschaftSection = false;
 
+    function newSummary() {
+        return {
+            month: null,
+            year: null,
+            uebertragVormonat: null,
+            uebertragFolgemonat: null,
+            periodePepSoll: null,
+            periodeVertrSoll: null,
+            periodeIst: null,
+            periodeSaldo: null,
+            bereitschaftAuszahlung: null,
+            bereitschaftAzk: null,
+        };
+    }
+
+    function hasUsefulSummary(s) {
+        return !!(
+            s.uebertragVormonat ||
+            s.uebertragFolgemonat ||
+            s.periodeIst ||
+            s.periodeSaldo ||
+            s.bereitschaftAuszahlung ||
+            s.bereitschaftAzk
+        );
+    }
+
+    function flushSummary() {
+        if (hasUsefulSummary(summary)) {
+            if (!summary.month && currentMonth) summary.month = currentMonth;
+            if (!summary.year && currentYear) summary.year = currentYear;
+            summaries.push(summary);
+        }
+        summary = newSummary();
+    }
+
     for (const line of lines) {
-        // Monat und Jahr finden
-        if (!currentYear || !currentMonth) {
-            const monthYearMatch = line.match(monthYearRegex);
-            if (monthYearMatch) {
-                currentMonth = monthYearMatch[1];
-                currentYear = monthYearMatch[2];
+        const monthYearMatch = line.match(monthYearRegex);
+        if (monthYearMatch) {
+            // Neuer Monat (z.B. mehrere PDFs in einem Text) → vorherige Summary sichern
+            if (summary.month && summary.month !== monthYearMatch[1]) {
+                flushSummary();
             }
+            currentMonth = monthYearMatch[1];
+            currentYear = monthYearMatch[2];
+            summary.month = currentMonth;
+            summary.year = currentYear;
+            // Bereitschafts-Block gilt nur innerhalb eines Monats/PDF
+            inBereitschaftSection = false;
         }
 
-        // Bereichswechsel zu Bereitschaftsdiensten
+        if (/Zeitabrechnung/i.test(line)) {
+            inBereitschaftSection = false;
+        }
+
+        const uebertragVon = line.match(uebertragVonRegex);
+        if (uebertragVon) summary.uebertragVormonat = uebertragVon[1];
+
+        const uebertragNach = line.match(uebertragNachRegex);
+        if (uebertragNach) summary.uebertragFolgemonat = uebertragNach[1];
+
+        const periode = line.match(periodeRegex);
+        if (periode) {
+            summary.periodePepSoll = periode[1];
+            summary.periodeVertrSoll = periode[2];
+            summary.periodeIst = periode[3];
+            summary.periodeSaldo = periode[4];
+        }
+
+        const auszahlung = line.match(auszahlungRegex);
+        if (auszahlung) summary.bereitschaftAuszahlung = auszahlung[1];
+
+        const bereitAzk = line.match(bereitAzkRegex);
+        if (bereitAzk) summary.bereitschaftAzk = bereitAzk[1];
+
         if (bereitSectioRegex.test(line)) {
             inBereitschaftSection = true;
             continue;
         }
 
         if (inBereitschaftSection) {
-            const onCallMatch = line.match(onCallBereitschaftRegex);
+            const onCallMatch = line.match(onCallBereitschaftRegex) || line.match(onCallBereitschaftFallback);
             if (onCallMatch) {
-                const [_, dateStr, startTime, endTime] = onCallMatch;
+                const dateStr = onCallMatch[1];
+                const startTime = onCallMatch[2];
+                const endTime = onCallMatch[3];
                 const [day, month, year] = dateStr.split('.');
                 const fullDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                bereitschaftEntries.push({ date: fullDate, start: startTime, end: endTime });
+                const entry = { date: fullDate, start: startTime, end: endTime };
+                if (onCallMatch.length >= 7) {
+                    entry.bereitPercent = onCallMatch[5];
+                    entry.bewertet = onCallMatch[6];
+                }
+                bereitschaftEntries.push(entry);
             }
-        } else {
-            const shiftMatch = line.match(shiftRegex);
-            const vacationMatch = line.match(vacationRegex);
-            const krankMatch = line.match(krankRegex);
-            const holidayMatch = line.match(holidayRegex);
+            continue;
+        }
 
-            if (shiftMatch && currentYear && currentMonth) {
-                const [_, day, startTime, endTime] = shiftMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ 
-                    date: date, 
-                    start: startTime, 
-                    end: endTime,
-                    isWork: true 
-                });
-            } else if (vacationMatch && currentYear && currentMonth) {
-                const [_, day] = vacationMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'URLAUB', date: date, allDay: true, isSpecial: true });
-            } else if (krankMatch && currentYear && currentMonth) {
-                const [_, day] = krankMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'KRANK', date: date, allDay: true, isSpecial: true });
-            } else if (holidayMatch && currentYear && currentMonth) {
-                const [_, day] = holidayMatch;
-                const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
-                mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true, isSpecial: true });
+        const shiftMatch = line.match(shiftRegex);
+        const vacationMatch = line.match(vacationRegex);
+        const krankMatch = line.match(krankRegex);
+        const holidayMatch = line.match(holidayRegex);
+
+        if (shiftMatch && currentYear && currentMonth) {
+            const day = shiftMatch[1];
+            const startTime = shiftMatch[2];
+            const endTime = shiftMatch[3];
+            const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            const entry = {
+                date,
+                start: startTime,
+                end: endTime,
+                isWork: true,
+            };
+            if (shiftMatch[4] != null) {
+                entry.pause = shiftMatch[4];
+                entry.pepSoll = shiftMatch[5];
+                entry.vertrSoll = shiftMatch[6];
+                entry.ist = shiftMatch[7];
+                entry.azkDaily = shiftMatch[8];
+                entry.azkKum = shiftMatch[9];
             }
+            mainEntries.push(entry);
+        } else if (vacationMatch && currentYear && currentMonth) {
+            const day = vacationMatch[1];
+            const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            mainEntries.push({ type: 'URLAUB', date: date, allDay: true, isSpecial: true });
+        } else if (krankMatch && currentYear && currentMonth) {
+            const day = krankMatch[1];
+            const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            mainEntries.push({ type: 'KRANK', date: date, allDay: true, isSpecial: true });
+        } else if (holidayMatch && currentYear && currentMonth) {
+            const day = holidayMatch[1];
+            const date = `${currentYear}-${currentMonth.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            mainEntries.push({ type: 'FEIERTAG', date: date, allDay: true, isSpecial: true });
         }
     }
+
+    flushSummary();
 
     return {
         year: currentYear,
         month: currentMonth,
         mainEntries,
-        bereitschaftEntries
+        bereitschaftEntries,
+        summary: summaries[summaries.length - 1] || null,
+        summaries,
     };
 }

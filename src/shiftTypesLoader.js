@@ -39,8 +39,8 @@ export async function loadMapping(krankenhaus, mappingPath) {
  */
 export async function loadHospitalParser(krankenhaus) {
   try {
-    const module = await import(`../krankenhaeuser/${krankenhaus}/parser.js`);
-    // Wir suchen nach einer exportierten Funktion, die "parse" im Namen hat oder die einzige Export-Funktion ist
+    // Cache-Bust: Parser ändert sich oft; Browser-Module-Cache sonst zu hartnäckig
+    const module = await import(`../krankenhaeuser/${krankenhaus}/parser.js?v=20260719`);
     if (module.parseStElisabeth) return module.parseStElisabeth;
     if (module.default) return module.default;
     return Object.values(module).find(f => typeof f === 'function');

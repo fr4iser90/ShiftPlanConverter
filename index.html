@@ -141,6 +141,15 @@
                 <div id="previewContent" class="bg-gray-50 p-4 rounded flex-1 min-w-0 overflow-x-auto"></div>
                 <button id="convertBtn" class="w-full sm:w-auto bg-blue-500 text-white px-4 py-2 rounded whitespace-nowrap" style="display:none;">Dienstplan konvertieren (lokal)</button>
             </div>
+
+            <!-- Optionale Zusatzdaten aus Zeitabrechnung -->
+            <div class="mt-4 space-y-3">
+                <label class="inline-flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+                    <input type="checkbox" id="showMonthSummaryChk" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" checked>
+                    <span>Monatsübersicht anzeigen <span class="text-gray-400">(AZK, Saldo, Bereitschaft)</span></span>
+                </label>
+                <div id="monthSummaryCard" class="space-y-3" style="display:none;"></div>
+            </div>
         </section>
 
         <!-- Analyse Bereich für Parser-Entwicklung -->
@@ -231,6 +240,10 @@
                                 <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors">Mit Google verbinden</button>
                                 <select id="calendarSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 mt-2" style="display:none;"></select>
                                 <button id="createCalendarBtn" class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded mt-2 text-sm font-medium" style="display:none;">+ Neuen Kalender anlegen</button>
+                                <label class="flex items-start gap-2 text-xs text-gray-600 mt-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="richEventDetailsChk" class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span>Pause, Ist &amp; AZK in Kalender-Beschreibung schreiben <span class="text-gray-400">(optional, auch für .ics)</span></span>
+                                </label>
                                 <button id="syncBtn" class="w-full bg-green-500 text-white px-4 py-2 rounded font-bold disabled:opacity-50 mt-2" disabled>Mit Kalender synchronisieren</button>
                             </div>
                         </div>
@@ -301,6 +314,6 @@
     </template>
 
     <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
-    <script type="module" src="src/main.js"></script>
+    <script type="module" src="src/main.js?v=20260719c"></script>
 </body>
 </html>

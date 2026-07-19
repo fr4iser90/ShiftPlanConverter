@@ -4,14 +4,15 @@
  * Compatible with Nextcloud, Outlook, Apple Calendar, Thunderbird, etc.
  */
 
+import { buildEventDescription } from './eventDescription.js';
+import { isRichEventDetailsEnabled } from './monthSummary.js';
+
 export function exportToICS(filename = "dienstplan.ics") {
     const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
     if (!entries || entries.length === 0) {
         alert('Keine Einträge zum Exportieren gefunden.');
         return;
     }
-
-    function pad(n) { return n < 10 ? '0' + n : n; }
 
     function formatDateTime(date, time) {
         // date: YYYY-MM-DD, time: HH:MM
@@ -20,7 +21,11 @@ export function exportToICS(filename = "dienstplan.ics") {
     }
 
     function escapeICalText(text) {
-        return (text || '').replace(/\\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+        return (text || '')
+            .replace(/\\/g, '\\\\')
+            .replace(/\n/g, '\\n')
+            .replace(/,/g, '\\,')
+            .replace(/;/g, '\\;');
     }
 
     let ics = [
@@ -29,6 +34,8 @@ export function exportToICS(filename = "dienstplan.ics") {
         'PRODID:-//ShiftPlanConverter//DE',
         'CALSCALE:GREGORIAN'
     ];
+
+    const richDetails = isRichEventDetailsEnabled();
 
     for (const entry of entries) {
         let start = entry.allDay
@@ -53,10 +60,12 @@ export function exportToICS(filename = "dienstplan.ics") {
             Math.random().toString(36).slice(2, 10)
         ].join('-').replace(/\s/g, '');
 
+        const description = buildEventDescription(entry, { richDetails });
+
         ics.push('BEGIN:VEVENT');
         ics.push('UID:' + uid + '@shiftplan');
         ics.push('SUMMARY:' + escapeICalText(entry.type));
-        ics.push('DESCRIPTION:' + escapeICalText('Automatisch importiert aus Dienstplan – keine Gewähr.'));
+        ics.push('DESCRIPTION:' + escapeICalText(description));
         if (entry.allDay) {
             ics.push('DTSTART;VALUE=DATE:' + entry.date.replace(/-/g, ''));
             ics.push('DTEND;VALUE=DATE:' + entry.date.replace(/-/g, ''));
