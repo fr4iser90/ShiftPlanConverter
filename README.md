@@ -12,6 +12,16 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 - Bereitschaftsdienste werden automatisch erkannt
 - Anpassbare Schichttypen für verschiedene Berufsgruppen
 
+## PDFs aus LOGA3 holen (optional)
+
+Der Converter wandelt nur PDFs um. Zum automatischen Download aus LOGA3 gibt es die separate Desktop-App:
+
+[![Latest](https://img.shields.io/github/v/release/fr4iser90/LOGA3-Automation?label=LOGA3)](https://github.com/fr4iser90/LOGA3-Automation/releases/latest)
+[![Windows](https://img.shields.io/badge/download-Windows-0078D4?logo=windows&logoColor=white)](https://github.com/fr4iser90/LOGA3-Automation/releases/latest/download/loga3-win-x64.zip)
+[![Linux](https://img.shields.io/badge/download-Linux-FCC624?logo=linux&logoColor=black)](https://github.com/fr4iser90/LOGA3-Automation/releases/latest/download/loga3-linux-x64.tar.gz)
+
+Ablauf: LOGA3-App → PDFs speichern → hier per Drag & Drop öffnen. Details: [LOGA3-Automation](https://github.com/fr4iser90/LOGA3-Automation).
+
 ## Setup
 
 ### Lokale Entwicklung
