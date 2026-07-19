@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOGA3 Downloads – Dienstplan Konverter</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="mb-6">
+            <a href="index.html" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span>&larr;</span> Zurück zur Hauptseite
+            </a>
+        </div>
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">LOGA3 Desktop-App</h1>
+            <div class="flex items-center gap-2">
+                <button id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus (Standard)">☀️</button>
+                <button id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+            </div>
+        </div>
+
+        <section class="mb-8 space-y-4 text-gray-700">
+            <p>
+                Die <strong>LOGA3-Automation</strong> ist ein separates Programm für Windows und Linux.
+                Sie meldet sich bei LOGA3 an und lädt deine Zeitabrechnungs-PDFs herunter.
+            </p>
+
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm space-y-2">
+                <p class="font-semibold text-gray-900">Zwei getrennte Schritte</p>
+                <ol class="list-decimal ml-5 space-y-1">
+                    <li><strong>LOGA3-App</strong> — holt die PDFs (Login bleibt lokal auf deinem PC)</li>
+                    <li><strong>Dieser Converter</strong> — wandelt PDFs in Kalender / .ics um (im Browser, ohne Upload)</li>
+                </ol>
+                <p class="text-gray-500 text-xs pt-1">
+                    Der Converter kennt keine LOGA3-Zugangsdaten. Die Desktop-App kennt keinen Google-Kalender.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Download</h2>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <a href="https://github.com/fr4iser90/LOGA3-Automation/releases/latest/download/loga3-win-x64.zip"
+                       class="inline-flex items-center px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+                        Windows (.zip)
+                    </a>
+                    <a href="https://github.com/fr4iser90/LOGA3-Automation/releases/latest/download/loga3-linux-x64.tar.gz"
+                       class="inline-flex items-center px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-black transition-colors">
+                        Linux (.tar.gz)
+                    </a>
+                    <a href="https://github.com/fr4iser90/LOGA3-Automation/releases/latest"
+                       target="_blank" rel="noopener"
+                       class="inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">
+                        AppImage / alle Releases
+                    </a>
+                </div>
+                <p class="text-xs text-gray-500">
+                    Windows: ZIP entpacken → <code class="bg-gray-100 px-1 rounded">Loga3.exe</code> starten.
+                    Danach Monate wählen, PDFs speichern und hier per Drag &amp; Drop öffnen.
+                </p>
+            </div>
+
+            <p class="text-sm">
+                Mehr Infos &amp; Quellcode:
+                <a href="https://github.com/fr4iser90/LOGA3-Automation" target="_blank" rel="noopener" class="text-blue-600 hover:underline">github.com/fr4iser90/LOGA3-Automation</a>
+            </p>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            function setTheme(theme) {
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                if (theme) body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            setTheme(localStorage.getItem('theme') || 'theme-light');
+
+            ['themeLightBtn', 'themeDarkBtn', 'themeSepiaBtn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.addEventListener('click', () => setTheme(id.replace('Btn', '').replace('theme', 'theme-').toLowerCase()));
+            });
+        });
+    </script>
+</body>
+</html>

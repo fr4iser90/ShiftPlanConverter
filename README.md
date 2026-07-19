@@ -14,7 +14,7 @@ Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit 
 
 ## PDFs aus LOGA3 holen (optional)
 
-Der Converter wandelt nur PDFs um. Zum automatischen Download aus LOGA3 gibt es die separate Desktop-App:
+Der Converter wandelt nur PDFs um. Zum automatischen Download aus LOGA3 gibt es die separate Desktop-App — Erklärung und Downloads auf der Seite [`loga3.html`](https://shift.fr4iser.com/loga3.html) bzw. im Repo:
 
 [![Latest](https://img.shields.io/github/v/release/fr4iser90/LOGA3-Automation?label=LOGA3)](https://github.com/fr4iser90/LOGA3-Automation/releases/latest)
 [![Windows](https://img.shields.io/badge/download-Windows-0078D4?logo=windows&logoColor=white)](https://github.com/fr4iser90/LOGA3-Automation/releases/latest/download/loga3-win-x64.zip)
