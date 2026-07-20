@@ -24,40 +24,26 @@ Ablauf: LOGA3-App → PDFs speichern → hier per Drag & Drop öffnen. Details: 
 
 ## Setup
 
-### Lokale Entwicklung
+### Docker (empfohlen)
 
-1. Erstelle ein Projekt in der [Google Cloud Console](https://console.cloud.google.com/)
-2. Aktiviere die Google Calendar API
-3. Erstelle OAuth 2.0-Anmeldedaten (Client ID und API Key)
+```bash
+git clone https://github.com/fr4iser90/ShiftPlanConverter
+cd ShiftPlanConverter
+docker-compose up -d
+```
 
-### Docker Deployment
+Erreichbar unter `http://localhost:8080`.
 
-1. Stelle sicher, dass Docker und Docker Compose installiert sind
-2. Klone das Repository:
-   ```bash
-   git clone https://github.com/fr4iser90/ShiftPlanConverter
-   cd ShiftPlanConverter
-   ```
-3. Starte die Anwendung mit Docker Compose:
-   ```bash
-   docker-compose up -d
-   ```
-4. Die Anwendung ist nun unter `http://localhost:8080` erreichbar
+### Google Kalender (Client ID)
 
-### Produktions-Deployment
+Die OAuth **Client ID** liegt in [`src/config.json`](src/config.json) (`googleClientId`). Das ist **kein Secret** und darf im Repo stehen (üblich bei öffentlichen Web-Apps). Vorlage ohne echte Werte: [`src/config.example.json`](src/config.example.json).
 
-1. Konfiguriere die Google Cloud Console:
-   - Füge deine Domain zu den autorisierten JavaScript-Ursprüngen hinzu
-   - Füge deine Domain zu den autorisierten Weiterleitungs-URIs hinzu
+| Nutzung | Was tun? |
+|---------|----------|
+| [shift.fr4iser.com](https://shift.fr4iser.com) | Nichts — **„Mit Google verbinden“** reicht |
+| Self-Hosting (eigene Domain / localhost) | Eigene Client ID in `src/config.json` setzen — siehe [`google-setup.html`](google-setup.html) |
 
-2. Passe die Nginx-Konfiguration an:
-   - Bearbeite `nginx.conf` für deine spezifischen Anforderungen
-   - Passe die Server-Name und SSL-Konfiguration an
-
-3. Starte die Anwendung:
-   ```bash
-   docker-compose up -d
-   ```
+Kein Client-Secret im Frontend. Nginx/SSL bei Bedarf in `nginx.conf` anpassen.
 
 ## Verwendung
 
@@ -66,8 +52,7 @@ Ablauf: LOGA3-App → PDFs speichern → hier per Drag & Drop öffnen. Details: 
 3. Wähle oder passe die Schichttypen an
 4. Wähle deine Dienstplan-PDF aus
 5. Überprüfe die Vorschau der erkannten Einträge
-6. Klicke auf "Mit Google Kalender verbinden"
-7. Nach erfolgreicher Anmeldung, klicke auf "Mit Kalender synchronisieren"
+6. Optional: „Mit Google verbinden“ → synchronisieren (oder .ics exportieren)
 
 ## Technische Details
 
@@ -122,9 +107,9 @@ Ablauf: LOGA3-App → PDFs speichern → hier per Drag & Drop öffnen. Details: 
    - Überprüfe, ob der Text in der PDF auswählbar ist
 
 2. **Google Kalender Verbindung fehlgeschlagen**
-   - Überprüfe die Client ID und API Key
-   - Stelle sicher, dass die Google Calendar API aktiviert ist
-   - Lösche Browser-Cache und Cookies
+   - Auf shift.fr4iser.com: Popup-Blocker prüfen, erneut „Mit Google verbinden“
+   - Self-Hosting: eigene Client ID + exakte JavaScript-Origin in der Cloud Console ([google-setup.html](google-setup.html))
+   - Browser-Cache / Cookies ggf. leeren
 
 3. **Synchronisierung fehlgeschlagen**
    - Überprüfe die Internetverbindung

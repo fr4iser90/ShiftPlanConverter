@@ -1,9 +1,9 @@
 /**
  * googleCalendar.js
  * Handles Google Calendar integration using Google Identity Services (GIS) and direct REST API calls.
- * Migration: gapi.client is deprecated for new projects. All calendar operations now use fetch + OAuth2 access token.
  *
- * Persistenz: Client ID + gewählter Kalender in localStorage.
+ * Default-Client-ID aus src/config.json (öffentlich, kein Secret).
+ * Self-Hosting: googleClientId in config.json anpassen.
  * Access-Token wird NICHT gespeichert – nach Reload stilles Re-Auth (prompt: '').
  */
 
@@ -21,29 +21,28 @@ const CALENDAR_SCOPES =
 let tokenClient = null;
 let accessToken = null;
 let currentClientId = null;
+let defaultClientId = '';
 /** @type {{ resolve: (v: unknown) => void, reject: (e: unknown) => void } | null} */
 let pendingAuth = null;
 
 export function initGoogleCalendar() {
-    const clientIdInput = document.getElementById('googleClientId');
     const connectBtn = document.getElementById('connectGoogleBtn');
     const syncBtn = document.getElementById('syncBtn');
     const calendarSelect = document.getElementById('calendarSelect');
     const createCalendarBtn = document.getElementById('createCalendarBtn');
 
-    if (!clientIdInput || !connectBtn || !syncBtn) return;
+    if (!connectBtn || !syncBtn) return;
 
     syncBtn.style.display = 'none';
 
-    const savedClientId = localStorage.getItem(STORAGE.clientId);
-    if (savedClientId) {
-        clientIdInput.value = savedClientId;
-    }
+    // Alte UI-Override-ID entfernen (nur noch config.json)
+    localStorage.removeItem(STORAGE.clientId);
 
-    clientIdInput.addEventListener('change', () => {
-        const value = clientIdInput.value.trim();
-        if (value) localStorage.setItem(STORAGE.clientId, value);
-        else localStorage.removeItem(STORAGE.clientId);
+    loadDefaultClientId().then((id) => {
+        defaultClientId = id;
+        if (defaultClientId) {
+            attemptSilentReconnect(defaultClientId, connectBtn);
+        }
     });
 
     if (calendarSelect) {
@@ -55,13 +54,13 @@ export function initGoogleCalendar() {
     }
 
     connectBtn.addEventListener('click', async () => {
-        const clientId = clientIdInput.value.trim();
+        const clientId = defaultClientId || (await loadDefaultClientId());
+        defaultClientId = clientId;
         if (!clientId) {
-            alert('Bitte geben Sie Ihre Google Client ID ein.');
+            alert('Keine Google Client ID in src/config.json. Siehe Self-Hosting-Anleitung.');
             return;
         }
 
-        localStorage.setItem(STORAGE.clientId, clientId);
         connectBtn.disabled = true;
         connectBtn.textContent = 'Verbinde...';
 
@@ -74,11 +73,6 @@ export function initGoogleCalendar() {
             alert('Fehler bei der Google-Authentifizierung. Bitte versuchen Sie es erneut.');
         }
     });
-
-    // Stilles Re-Auth nach Reload, wenn Client ID bekannt (kein Token speichern)
-    if (savedClientId) {
-        attemptSilentReconnect(savedClientId, connectBtn);
-    }
 
     async function afterGoogleLogin() {
         try {
@@ -211,11 +205,21 @@ export function initGoogleCalendar() {
             await ensureGoogleLoaded();
             await requestAccessToken(clientId, { interactive: false });
         } catch (e) {
-            // Kein vorheriger Consent / Session abgelaufen – kein Alarm, User kann manuell verbinden
             console.info('Stilles Re-Auth nicht möglich, manuelle Verbindung nötig.', e);
             accessToken = null;
             resetConnectButton(btn);
         }
+    }
+}
+
+async function loadDefaultClientId() {
+    try {
+        const response = await fetch('src/config.json');
+        const config = await response.json();
+        return (config.googleClientId || '').trim();
+    } catch (e) {
+        console.warn('Konnte Default-Client-ID nicht laden:', e);
+        return '';
     }
 }
 
@@ -235,7 +239,7 @@ function ensureGoogleLoaded() {
         }
 
         let attempts = 0;
-        const maxAttempts = 100; // ~5s
+        const maxAttempts = 100;
         const interval = setInterval(() => {
             attempts++;
             if (window.google?.accounts?.oauth2) {
