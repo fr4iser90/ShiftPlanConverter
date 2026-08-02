@@ -3,6 +3,8 @@
  * Extrahiert unabhängig vom Schicht-Parser direkt aus dem PDF-Rohtext.
  */
 
+import { readJsonStore, writeJsonStore } from './localData.js';
+
 const PREF_SHOW = 'prefShowMonthSummary';
 const PREF_RICH = 'prefRichEventDetails';
 const STORAGE_SUMMARIES = 'monthSummaries';
@@ -135,18 +137,13 @@ function parseSummaryChunk(chunk) {
 
 export function saveMonthSummaries(summaries) {
     const list = (summaries || []).filter(Boolean);
-    localStorage.setItem(STORAGE_SUMMARIES, JSON.stringify(list));
+    writeJsonStore(STORAGE_SUMMARIES, list);
     renderMonthSummariesFromStorage();
 }
 
 export function renderMonthSummariesFromStorage() {
-    let summaries = [];
-    try {
-        summaries = JSON.parse(localStorage.getItem(STORAGE_SUMMARIES) || '[]');
-    } catch (e) {
-        summaries = [];
-    }
-    renderMonthSummaries(summaries);
+    const summaries = readJsonStore(STORAGE_SUMMARIES, []);
+    renderMonthSummaries(Array.isArray(summaries) ? summaries : []);
 }
 
 /**

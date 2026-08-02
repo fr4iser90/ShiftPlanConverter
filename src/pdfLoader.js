@@ -13,17 +13,17 @@ function readFileAsArrayBuffer(file) {
     });
 }
 
-function readFileAsDataURL(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = () => reject(reader.error || new Error('FileReader error'));
-        reader.readAsDataURL(file);
-    });
-}
-
 function isPdfFile(file) {
     return file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+}
+
+/** Legacy: full PDF was once cached as data-URL — remove if still present. */
+function clearLegacyPdfCache() {
+    try {
+        localStorage.removeItem('dienstplanPDF');
+    } catch {
+        /* ignore */
+    }
 }
 
 export function initPDFLoad({ onPdfBatchLoaded }) {
@@ -32,20 +32,14 @@ export function initPDFLoad({ onPdfBatchLoaded }) {
 
     if (!dropzone || !pdfInput || typeof onPdfBatchLoaded !== 'function') return;
 
+    clearLegacyPdfCache();
+
     async function handleFileList(fileList) {
         const pdfFiles = Array.from(fileList).filter(isPdfFile);
         if (!pdfFiles.length) return;
 
-        if (pdfFiles.length === 1) {
-            try {
-                const dataUrl = await readFileAsDataURL(pdfFiles[0]);
-                localStorage.setItem('dienstplanPDF', dataUrl);
-            } catch (e) {
-                console.warn('Konnte PDF nicht als DataURL zwischenspeichern:', e);
-            }
-        } else {
-            localStorage.removeItem('dienstplanPDF');
-        }
+        // PDFs stay in memory (ArrayBuffer) only — never persist to localStorage.
+        clearLegacyPdfCache();
 
         const items = [];
         for (const file of pdfFiles) {

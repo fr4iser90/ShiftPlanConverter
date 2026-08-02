@@ -13,6 +13,7 @@ import { sendStructureFeedback, sendMappingProposal } from './api.js';
 import { initOptionalDataPrefs, saveMonthSummaries, renderMonthSummariesFromStorage, extractMonthSummariesFromText } from './monthSummary.js';
 import { resolvePresetTable } from './mappingNormalize.js';
 import { initPayrollUi, refreshPayrollTariffNotice } from './payrollUi.js';
+import { clearSensitiveLocalData, readJsonStore, writeJsonStore } from './localData.js';
 
 /**
  * Escapes HTML special characters to prevent XSS attacks
@@ -174,7 +175,7 @@ async function refreshPreview() {
 
     try {
         const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser, parseOpts());
-        localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+        writeJsonStore('parsedEntries', parsed.entries);
         saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
         await renderPreview(parsed.entries, currentMapping, preset);
     } catch (e) {
@@ -771,7 +772,7 @@ function wireExportButtons() {
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed');
             btn.onclick = (e) => {
-                const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+                const entries = readJsonStore('parsedEntries', []);
                 if (!entries || entries.length === 0) {
                     e.preventDefault();
                     alert('Bitte zuerst einen Dienstplan konvertieren!');
@@ -910,7 +911,7 @@ initPDFLoad({
         const debugArea = document.getElementById('debugArea');
         if (debugArea) debugArea.style.display = 'block';
 
-        localStorage.setItem('parsedEntries', JSON.stringify(merged));
+        writeJsonStore('parsedEntries', merged);
         saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
         await renderPreview(merged, currentMapping, preset);
 
@@ -1055,13 +1056,33 @@ window.addEventListener('DOMContentLoaded', () => {
         preset: () => document.getElementById('presetSelect')?.value || '',
         getShiftEntries: () => {
             try {
-                return JSON.parse(localStorage.getItem('parsedEntries') || '[]');
-            } catch {
-                return [];
-            }
+            return readJsonStore('parsedEntries', []);
         },
         extractTextFromPdfBuffer,
     });
+
+    const clearLocalBtn = document.getElementById('clearLocalDataBtn');
+    if (clearLocalBtn) {
+        clearLocalBtn.addEventListener('click', () => {
+            if (!confirm('Lokale Schichtdaten, Monatsübersichten, Namensfilter und Mapping-Overrides löschen? (Theme/Farben bleiben.)')) {
+                return;
+            }
+            clearSensitiveLocalData();
+            lastRawText = '';
+            const preview = document.getElementById('previewContent');
+            if (preview) preview.innerHTML = '';
+            const payrollOut = document.getElementById('payrollResults');
+            if (payrollOut) payrollOut.innerHTML = '';
+            const rawOut = document.getElementById('rawTextOutput');
+            if (rawOut) rawOut.textContent = '';
+            const debugArea = document.getElementById('debugArea');
+            if (debugArea) debugArea.style.display = 'none';
+            const personFilter = document.getElementById('personFilterInput');
+            if (personFilter) personFilter.value = '';
+            renderMonthSummariesFromStorage();
+            alert('Lokale sensiblen Daten gelöscht.');
+        });
+    }
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./sw.js').catch(() => {});

@@ -5,6 +5,12 @@ English. German: [CHANGELOG.md](./CHANGELOG.md)
 Based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Version in [`src/version.json`](./src/version.json) (also shown in the web app footer).
 
+## Unreleased
+
+### Changed
+- Shifts / month summary: `sessionStorage` instead of long-lived localStorage; removed legacy full-PDF data-URL cache
+- Footer: “Clear local data”; privacy: web vs mobile (no AES in the browser)
+
 ## 0.2.0 — 2026-08-02
 
 First versioned release after porting key Mobile features to the web app (`shift.fr4iser.com`).

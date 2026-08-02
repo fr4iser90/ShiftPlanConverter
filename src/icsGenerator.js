@@ -6,9 +6,10 @@
 
 import { buildEventDescription } from './eventDescription.js';
 import { isRichEventDetailsEnabled } from './monthSummary.js';
+import { readJsonStore } from './localData.js';
 
 export function exportToICS(filename = "dienstplan.ics") {
-    const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+    const entries = readJsonStore('parsedEntries', []);
     if (!entries || entries.length === 0) {
         alert('Keine Einträge zum Exportieren gefunden.');
         return;

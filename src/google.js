@@ -339,7 +339,8 @@ export async function syncToCalendar(calendarId) {
             localStorage.setItem(STORAGE.calendarId, calendarId);
         }
 
-        const entries = JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+        const { readJsonStore } = await import('./localData.js');
+        const entries = readJsonStore('parsedEntries', []);
         if (!entries || entries.length === 0) {
             alert('Keine Einträge zum Synchronisieren gefunden.');
             return;

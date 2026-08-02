@@ -5,6 +5,12 @@ Deutsch. Englische Fassung: [CHANGELOG.en.md](./CHANGELOG.en.md)
 Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 Version in [`src/version.json`](./src/version.json) (auch Footer der Web-App).
 
+## Unreleased
+
+### Geändert
+- Schichten / Monatsübersicht: `sessionStorage` statt dauerhaftem localStorage; Legacy-PDF-DataURL-Cache entfernt
+- Footer: „Lokale Daten löschen“; Datenschutz: Web vs. Mobile (kein AES im Browser)
+
 ## 0.2.0 — 2026-08-02
 
 Erster versionierter Stand nach dem Port wichtiger Mobile-Features auf die Web-App (`shift.fr4iser.com`).
