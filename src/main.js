@@ -37,11 +37,40 @@ let lastRawText = "";
 let payrollUiApi = null;
 
 const PERSON_FILTER_KEY = 'spc_person_filter';
+const WORKPLACE_PREFS_KEY = 'spc_workplace_prefs';
 
 function getPersonFilter() {
     const el = document.getElementById('personFilterInput');
     if (el) return el.value.trim();
     return localStorage.getItem(PERSON_FILTER_KEY) || '';
+}
+
+function loadWorkplacePrefs() {
+    try {
+        const raw = localStorage.getItem(WORKPLACE_PREFS_KEY);
+        if (!raw) return {};
+        const parsed = JSON.parse(raw);
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveWorkplacePrefs() {
+    const prefs = {
+        krankenhaus: document.getElementById('krankenhausSelect')?.value || currentKrankenhaus,
+        profession: document.getElementById('professionSelect')?.value || '',
+        bereich: document.getElementById('bereichSelect')?.value || '',
+        preset: document.getElementById('presetSelect')?.value || '',
+    };
+    localStorage.setItem(WORKPLACE_PREFS_KEY, JSON.stringify(prefs));
+}
+
+function selectOptionIfPresent(selectEl, value) {
+    if (!selectEl || value == null || value === '') return false;
+    const ok = Array.from(selectEl.options).some((o) => o.value === value);
+    if (ok) selectEl.value = value;
+    return ok;
 }
 
 function parseOpts() {
@@ -209,16 +238,27 @@ function getUserMapping() {
 async function reloadHospitalAndUI() {
     try {
         console.log("Initialisiere Krankenhaus:", currentKrankenhaus);
+        const prefs = loadWorkplacePrefs();
         currentHospitalConfig = await loadHospitalConfig(currentKrankenhaus);
         currentParser = await loadHospitalParser(currentKrankenhaus);
         currentPdfConfig = await loadPdfParserConfig(currentKrankenhaus);
         updateGroupOptions();
-        
+
         // WICHTIG: Event-Listener für Dropdowns sicherstellen
         setupDropdownListeners();
-        
+
+        const professionSelect = document.getElementById('professionSelect');
+        selectOptionIfPresent(professionSelect, prefs.profession);
+
         await updateAreaOptions();
+        const bereichSelect = document.getElementById('bereichSelect');
+        if (selectOptionIfPresent(bereichSelect, prefs.bereich)) {
+            await loadCurrentMapping();
+        }
+
         await updatePresetOptions();
+        selectOptionIfPresent(document.getElementById('presetSelect'), prefs.preset);
+
         await renderShiftTypesList(getCurrentShiftTypes());
     } catch (e) {
         console.error('Fehler beim Initialisieren:', e);
@@ -241,16 +281,18 @@ function setupDropdownListeners() {
             await loadCurrentMapping();
             await updatePresetOptions();
         }
+        saveWorkplacePrefs();
         renderShiftTypesList(getCurrentShiftTypes());
         refreshPreview();
     };
 
     professionSelect.onchange = handleChange;
-    
+
     bereichSelect.onchange = handleChange;
 
     if (presetSelect) {
         presetSelect.onchange = () => {
+            saveWorkplacePrefs();
             renderShiftTypesList(getCurrentShiftTypes());
             refreshPreview();
         };
@@ -1024,11 +1066,14 @@ window.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const workplacePrefs = loadWorkplacePrefs();
     const krankenhausSelect = document.getElementById('krankenhausSelect');
     if (krankenhausSelect) {
+        selectOptionIfPresent(krankenhausSelect, workplacePrefs.krankenhaus);
         currentKrankenhaus = krankenhausSelect.value;
         krankenhausSelect.addEventListener('change', async () => {
             currentKrankenhaus = krankenhausSelect.value;
+            saveWorkplacePrefs();
             await reloadHospitalAndUI();
         });
     }
@@ -1042,6 +1087,9 @@ window.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem(PERSON_FILTER_KEY, personFilterInput.value.trim());
             refreshPreview();
         });
+        personFilterInput.addEventListener('blur', () => {
+            localStorage.setItem(PERSON_FILTER_KEY, personFilterInput.value.trim());
+        });
     }
 
     reloadHospitalAndUI();
@@ -1054,10 +1102,7 @@ window.addEventListener('DOMContentLoaded', () => {
         krankenhaus: () => currentKrankenhaus,
         mapping: () => currentMapping,
         preset: () => document.getElementById('presetSelect')?.value || '',
-        getShiftEntries: () => {
-            try {
-            return readJsonStore('parsedEntries', []);
-        },
+        getShiftEntries: () => readJsonStore('parsedEntries', []),
         extractTextFromPdfBuffer,
     });
 

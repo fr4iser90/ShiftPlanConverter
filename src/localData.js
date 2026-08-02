@@ -21,6 +21,7 @@ const LOCAL_PREF_KEYS = [
   'theme',
   'prefShowMonthSummary',
   'prefRichEventDetails',
+  'spc_workplace_prefs',
 ];
 
 /** Keys that look like user mapping overrides. */
