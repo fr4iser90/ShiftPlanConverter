@@ -282,10 +282,12 @@
                             <p class="text-[11px] text-gray-600 mb-4 leading-relaxed">
                                 <b>Hinweis:</b> Synchronisation direkt Browser ↔ Google — keine Uploads auf fremde Server.
                                 Kalenderwahl wird lokal gespeichert; Access-Tokens nicht.
+                                Der Google-Hauptkalender ist gesperrt. Sync löscht nur Termine im Datumsbereich des aktuellen Plans (kein kompletter Kalender-Wipe), dann schreibt die neuen Schichten.
                             </p>
                             <div class="space-y-2">
                                 <button id="connectGoogleBtn" class="w-full bg-blue-500 text-white px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors">Mit Google verbinden</button>
                                 <select id="calendarSelect" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 mt-2" style="display:none;"></select>
+                                <p id="calendarPrimaryHint" class="text-[11px] text-amber-700 hidden">Hauptkalender ist gesperrt — bitte eigenen „Dienstplan“-Kalender anlegen.</p>
                                 <button id="createCalendarBtn" class="w-full bg-gray-200 text-gray-700 px-4 py-2 rounded mt-2 text-sm font-medium" style="display:none;">+ Neuen Kalender anlegen</button>
                                 <label class="flex items-start gap-2 text-xs text-gray-600 mt-2 cursor-pointer select-none">
                                     <input type="checkbox" id="richEventDetailsChk" class="mt-0.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
@@ -371,6 +373,6 @@
     </template>
 
     <!-- WICHTIG: Module NACH ALLEN DOM-ELEMENTEN einbinden -->
-    <script type="module" src="src/main.js?v=20260802-0.2.0c"></script>
+    <script type="module" src="src/main.js?v=20260802-0.2.0d"></script>
 </body>
 </html>

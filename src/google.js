@@ -47,9 +47,15 @@ export function initGoogleCalendar() {
 
     if (calendarSelect) {
         calendarSelect.addEventListener('change', () => {
-            if (calendarSelect.value) {
-                localStorage.setItem(STORAGE.calendarId, calendarSelect.value);
+            const selected = calendarSelect.selectedOptions?.[0];
+            if (selected?.disabled || !calendarSelect.value) {
+                alert('Der Google-Hauptkalender (Primary) ist gesperrt. Bitte einen eigenen Dienstplan-Kalender wählen oder anlegen.');
+                const saved = localStorage.getItem(STORAGE.calendarId);
+                if (saved) calendarSelect.value = saved;
+                else calendarSelect.selectedIndex = -1;
+                return;
             }
+            localStorage.setItem(STORAGE.calendarId, calendarSelect.value);
         });
     }
 
@@ -80,21 +86,11 @@ export function initGoogleCalendar() {
             if (!calendars) throw new Error('Keine Kalender gefunden.');
 
             if (calendarSelect) {
-                calendarSelect.innerHTML = '';
-                calendars.forEach(cal => {
-                    const opt = document.createElement('option');
-                    opt.value = cal.id;
-                    opt.textContent = cal.summary || cal.id;
-                    calendarSelect.appendChild(opt);
-                });
-
-                const savedCalendarId = localStorage.getItem(STORAGE.calendarId);
-                if (savedCalendarId && calendars.some(c => c.id === savedCalendarId)) {
-                    calendarSelect.value = savedCalendarId;
-                } else if (calendars[0]) {
-                    localStorage.setItem(STORAGE.calendarId, calendars[0].id);
-                }
-
+                fillCalendarSelect(
+                    calendarSelect,
+                    calendars,
+                    localStorage.getItem(STORAGE.calendarId)
+                );
                 calendarSelect.style.display = '';
                 calendarSelect.disabled = false;
             }
@@ -106,20 +102,9 @@ export function initGoogleCalendar() {
                     const calendarName = prompt('Name für neuen Kalender:', 'Dienstplan');
                     if (!calendarName) return;
                     try {
-                        await createCalendar(calendarName);
+                        const created = await createCalendar(calendarName);
                         const newCalendars = await fetchCalendarList();
-                        calendarSelect.innerHTML = '';
-                        newCalendars.forEach(cal => {
-                            const opt = document.createElement('option');
-                            opt.value = cal.id;
-                            opt.textContent = cal.summary || cal.id;
-                            calendarSelect.appendChild(opt);
-                        });
-                        const created = newCalendars.find(cal => cal.summary === calendarName);
-                        if (created) {
-                            calendarSelect.value = created.id;
-                            localStorage.setItem(STORAGE.calendarId, created.id);
-                        }
+                        fillCalendarSelect(calendarSelect, newCalendars, created.id);
                         alert('Neuer Kalender erfolgreich angelegt!');
                     } catch (e) {
                         alert('Fehler beim Anlegen des Kalenders: ' + (e.message || e));
@@ -130,10 +115,13 @@ export function initGoogleCalendar() {
             syncBtn.style.display = '';
             syncBtn.disabled = false;
             syncBtn.onclick = () => {
-                const selectedCalendarId = calendarSelect ? calendarSelect.value : calendars[0].id;
-                if (selectedCalendarId) {
-                    localStorage.setItem(STORAGE.calendarId, selectedCalendarId);
+                const selectedCalendarId = calendarSelect?.value || '';
+                const hit = calendars.find((c) => c.id === selectedCalendarId);
+                if (!selectedCalendarId || isPrimaryCalendar(hit)) {
+                    alert('Bitte einen eigenen Dienstplan-Kalender wählen (Hauptkalender ist gesperrt). Mit „+ Neuen Kalender anlegen“ anlegen.');
+                    return;
                 }
+                localStorage.setItem(STORAGE.calendarId, selectedCalendarId);
                 syncToCalendar(selectedCalendarId);
             };
 
@@ -255,6 +243,53 @@ function ensureGoogleLoaded() {
 
 // --- Google Calendar REST API Calls ---
 
+function isPrimaryCalendar(cal) {
+    if (!cal) return false;
+    return !!cal.primary || cal.id === 'primary';
+}
+
+/** Prefer saved non-primary calendar; never default to primary. */
+function pickDefaultCalendarId(calendars, savedId) {
+    if (savedId) {
+        const saved = calendars.find((c) => c.id === savedId);
+        if (saved && !isPrimaryCalendar(saved)) return saved.id;
+    }
+    const secondary = calendars.find((c) => !isPrimaryCalendar(c));
+    return secondary?.id || '';
+}
+
+function fillCalendarSelect(calendarSelect, calendars, preferredId) {
+    if (!calendarSelect) return '';
+    calendarSelect.innerHTML = '';
+    calendars.forEach((cal) => {
+        const opt = document.createElement('option');
+        opt.value = cal.id;
+        const label = cal.summary || cal.id;
+        if (isPrimaryCalendar(cal)) {
+            opt.textContent = `${label} (Hauptkalender — gesperrt)`;
+            opt.disabled = true;
+        } else {
+            opt.textContent = label;
+        }
+        calendarSelect.appendChild(opt);
+    });
+
+    const chosen = pickDefaultCalendarId(calendars, preferredId);
+    if (chosen) {
+        calendarSelect.value = chosen;
+        localStorage.setItem(STORAGE.calendarId, chosen);
+    } else {
+        // Only primary calendars exist — leave empty / invalid until user creates one
+        calendarSelect.selectedIndex = -1;
+        localStorage.removeItem(STORAGE.calendarId);
+    }
+    const hint = document.getElementById('calendarPrimaryHint');
+    if (hint) {
+        hint.classList.toggle('hidden', !!chosen);
+    }
+    return chosen;
+}
+
 async function fetchCalendarList() {
     const url = 'https://www.googleapis.com/calendar/v3/users/me/calendarList';
     const resp = await fetch(url, {
@@ -335,9 +370,24 @@ export async function syncToCalendar(calendarId) {
             return;
         }
 
-        if (calendarId) {
-            localStorage.setItem(STORAGE.calendarId, calendarId);
+        if (!calendarId || calendarId === 'primary') {
+            alert('Hauptkalender (Primary) ist gesperrt. Bitte einen eigenen Dienstplan-Kalender wählen.');
+            return;
         }
+
+        // Extra guard: never wipe/write the Google primary calendar
+        try {
+            const calendars = await fetchCalendarList();
+            const target = calendars.find((c) => c.id === calendarId);
+            if (isPrimaryCalendar(target)) {
+                alert('Hauptkalender (Primary) ist gesperrt. Bitte einen eigenen Dienstplan-Kalender wählen.');
+                return;
+            }
+        } catch (e) {
+            console.warn('Kalenderliste für Primary-Check nicht ladbar:', e);
+        }
+
+        localStorage.setItem(STORAGE.calendarId, calendarId);
 
         const { readJsonStore } = await import('./localData.js');
         const entries = readJsonStore('parsedEntries', []);
@@ -346,6 +396,7 @@ export async function syncToCalendar(calendarId) {
             return;
         }
 
+        // Only wipe events in the date range of the current plan — not the whole calendar
         const dates = entries.map(e => e.date).filter(Boolean).sort();
         const startDate = dates[0];
         const endDate = dates[dates.length - 1];
