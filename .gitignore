@@ -1,2 +1,5 @@
 # Persönliche Impressums-Daten (nicht öffentlich committen)
 impressum.html
+# Real PDFs with personal data — never commit
+tests/fixtures/private/
+*.payroll.local.json

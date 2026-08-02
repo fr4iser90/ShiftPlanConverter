@@ -1,0 +1,413 @@
+{
+  "department": "OP",
+  "role": "Anästhesist/in",
+  "payroll": {
+    "supported": true,
+    "profile": "mappings/aerzte/krankenhaus.payroll.json"
+  },
+  "colors": {
+    "ID1": "#0ea5e9",
+    "ID2": "#0284c7",
+    "B5A": "#0369a1",
+    "B29": "#075985",
+    "IDT": "#22d3ee",
+    "B19": "#06b6d4",
+    "S16": "#0891b2",
+    "IDN1": "#6366f1",
+    "IDN2": "#4f46e5",
+    "B20": "#4338ca",
+    "B54": "#3730a3",
+    "FK51": "#312e81",
+    "FK74": "#1e1b4b",
+    "OPD1": "#f59e0b",
+    "OPD2": "#d97706",
+    "B27": "#b45309",
+    "B44": "#92400e",
+    "OPTn": "#fbbf24",
+    "OPNn": "#f97316",
+    "PD1": "#a78bfa",
+    "PD": "#8b5cf6",
+    "SD": "#ec4899",
+    "ZD": "#14b8a6",
+    "LD": "#ef4444",
+    "FD": "#22c55e",
+    "FDI": "#16a34a",
+    "FDK": "#15803d",
+    "FDO": "#166534",
+    "U": "#a78bfa",
+    "FZA": "#c4b5fd",
+    "K": "#fb7185",
+    "KARE": "#f43f5e",
+    "ZE": "#e11d48",
+    "EL": "#94a3b8",
+    "MS": "#94a3b8",
+    "UU": "#a78bfa",
+    "ZU": "#c4b5fd",
+    "FO": "#64748b",
+    "EXP": "#64748b",
+    "FT": "#94a3b8"
+  },
+  "codeAliases": {
+    "516": "S16",
+    "URLAUB": "U",
+    "SCHICHTFREI": "/",
+    "WUNSCHFREI": "//",
+    "OPTN": "OPTn",
+    "OPNN": "OPNn",
+    "1D1": "ID1",
+    "IDI": "ID1",
+    "1D2": "ID2",
+    "1DT": "IDT",
+    "1DN1": "IDN1",
+    "1DN2": "IDN2",
+    "0PD1": "OPD1",
+    "0PD2": "OPD2",
+    "SI6": "S16",
+    "S1G": "S16",
+    "B5A": "B5A",
+    "BSA": "B5A",
+    "BBA": "B5A"
+  },
+  "composeRules": [
+    {
+      "id": "hausdienst-mo-do",
+      "label": "Hausdienst",
+      "when": "weekday-mon-thu",
+      "codes": [
+        "ID1",
+        "B5A"
+      ],
+      "start": "11:30",
+      "end": "08:30",
+      "type": "oncall"
+    },
+    {
+      "id": "hausdienst-fr",
+      "label": "Hausdienst",
+      "when": "friday",
+      "codes": [
+        "ID2",
+        "B29"
+      ],
+      "start": "11:30",
+      "end": "09:00",
+      "type": "oncall"
+    },
+    {
+      "id": "hausdienst-tag-we",
+      "label": "Hausdienst Tag",
+      "when": "weekend-or-holiday",
+      "codes": [
+        "IDT",
+        "B19",
+        "S16"
+      ],
+      "start": "08:00",
+      "end": "20:30",
+      "type": "oncall"
+    },
+    {
+      "id": "hausdienst-nacht-vor-we",
+      "label": "Hausdienst Nacht",
+      "when": "next-day-weekend-or-holiday",
+      "codes": [
+        "IDN1",
+        "B20"
+      ],
+      "nextDayCodes": [
+        "FK51"
+      ],
+      "start": "19:30",
+      "end": "09:00",
+      "type": "night"
+    },
+    {
+      "id": "hausdienst-nacht-vor-werktag",
+      "label": "Hausdienst Nacht",
+      "when": "next-day-weekday",
+      "codes": [
+        "IDN2",
+        "B54"
+      ],
+      "nextDayCodes": [
+        "FK74"
+      ],
+      "start": "19:30",
+      "end": "08:30",
+      "type": "night"
+    },
+    {
+      "id": "rufdienst-mo-do",
+      "label": "Rufdienst",
+      "when": "weekday-mon-thu",
+      "codes": [
+        "OPD1",
+        "B27"
+      ],
+      "start": "11:30",
+      "end": "08:00",
+      "type": "oncall"
+    },
+    {
+      "id": "rufdienst-fr",
+      "label": "Rufdienst",
+      "when": "friday",
+      "codes": [
+        "OPD2",
+        "B44"
+      ],
+      "start": "11:30",
+      "end": "08:00",
+      "type": "oncall"
+    },
+    {
+      "id": "rufdienst-tag-we",
+      "label": "Rufdienst Tag",
+      "when": "weekend-or-holiday",
+      "codes": [
+        "OPTn"
+      ],
+      "start": "08:00",
+      "end": "20:00",
+      "type": "oncall"
+    },
+    {
+      "id": "rufdienst-nacht-we",
+      "label": "Rufdienst Nacht",
+      "when": "weekend-or-holiday",
+      "codes": [
+        "OPNn"
+      ],
+      "start": "20:00",
+      "end": "08:00",
+      "type": "night"
+    },
+    {
+      "id": "praemed-fr",
+      "label": "Prämedikationsdienst",
+      "when": "friday",
+      "codes": [
+        "PD1"
+      ],
+      "start": "09:00",
+      "end": "17:30",
+      "type": "work"
+    },
+    {
+      "id": "dritter-dienst-we",
+      "label": "3. Dienst",
+      "when": "weekend-or-holiday",
+      "codes": [
+        "SD"
+      ],
+      "start": "07:30",
+      "end": "16:00",
+      "type": "work"
+    },
+    {
+      "id": "schmerzdienst-werktag",
+      "label": "Schmerzdienst",
+      "when": "weekday",
+      "codes": [
+        "SD"
+      ],
+      "start": "07:30",
+      "end": "16:00",
+      "type": "work"
+    }
+  ],
+  "dutyCodes": {
+    "11:30-20:00": {
+      "code": "ID1",
+      "also": [
+        "ID2",
+        "OPD1",
+        "OPD2",
+        "LD"
+      ],
+      "label": "Haus-/Ruf-/Langdienst Tag–Abend",
+      "type": "oncall",
+      "isValidated": true
+    },
+    "20:00-08:30": {
+      "code": "B5A",
+      "label": "Hausdienst Nacht (Teil Mo–Do)",
+      "type": "night",
+      "isValidated": true
+    },
+    "20:00-09:00": {
+      "code": "B29",
+      "label": "Hausdienst Nacht (Teil Freitag)",
+      "type": "night",
+      "isValidated": true
+    },
+    "08:00-09:00": {
+      "code": "IDT",
+      "also": [
+        "FK51"
+      ],
+      "label": "Hausdienst Tag Start / Folgetagsanteil WE",
+      "type": "oncall",
+      "isValidated": true
+    },
+    "09:00-19:30": {
+      "code": "B19",
+      "label": "Hausdienst Tag (Mitte)",
+      "type": "oncall",
+      "isValidated": true
+    },
+    "19:30-20:30": {
+      "code": "S16",
+      "also": [
+        "IDN1",
+        "IDN2"
+      ],
+      "label": "Hausdienst Tag Ende / Nacht Start",
+      "type": "oncall",
+      "isValidated": true
+    },
+    "20:30-08:00": {
+      "code": "B20",
+      "label": "Hausdienst Nacht (Mitte vor WE/FT)",
+      "type": "night",
+      "isValidated": true
+    },
+    "20:30-07:30": {
+      "code": "B54",
+      "label": "Hausdienst Nacht (Mitte vor Werktag)",
+      "type": "night",
+      "isValidated": true
+    },
+    "07:30-08:30": {
+      "code": "FK74",
+      "label": "Hausdienst Nacht Folgetagsanteil (Werktag)",
+      "type": "night",
+      "isValidated": true
+    },
+    "20:00-08:00": {
+      "code": "B27",
+      "also": [
+        "B44",
+        "OPNn"
+      ],
+      "label": "Rufdienst Nacht",
+      "type": "night",
+      "isValidated": true
+    },
+    "08:00-20:00": {
+      "code": "OPTn",
+      "label": "Rufdienst Tag",
+      "type": "oncall",
+      "isValidated": true
+    },
+    "09:00-17:30": {
+      "code": "PD1",
+      "label": "Prämedikationsdienst (Freitag)",
+      "type": "work",
+      "isValidated": true
+    },
+    "07:30-16:00": {
+      "code": "SD",
+      "also": [
+        "FD",
+        "FDI",
+        "FDK",
+        "FDO",
+        "PD"
+      ],
+      "label": "Schmerzdienst / 3. Dienst / Frühdienst / Prämed (alt)",
+      "type": "work",
+      "isValidated": true
+    },
+    "09:30-18:00": {
+      "code": "ZD",
+      "label": "Zwischendienst",
+      "type": "work",
+      "isValidated": true
+    },
+    "SPECIAL:/": {
+      "code": "/",
+      "label": "Schichtfrei",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL://": {
+      "code": "//",
+      "label": "Wunschfrei",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:FT": {
+      "code": "FT",
+      "label": "Feiertag",
+      "type": "holiday",
+      "isValidated": true
+    },
+    "SPECIAL:U": {
+      "code": "U",
+      "label": "Urlaub",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:FZA": {
+      "code": "FZA",
+      "label": "Freizeitausgleich",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:K": {
+      "code": "K",
+      "label": "Krank",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:KARE": {
+      "code": "KARE",
+      "label": "Krank ohne Schein",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:ZE": {
+      "code": "ZE",
+      "label": "Krank ohne Lohnfortzahlung",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:EL": {
+      "code": "EL",
+      "label": "Elternzeit",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:MS": {
+      "code": "MS",
+      "label": "Mutterschaft",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:UU": {
+      "code": "UU",
+      "label": "Unbezahlter Urlaub",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:ZU": {
+      "code": "ZU",
+      "label": "Zusatzurlaub",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:FO": {
+      "code": "FO",
+      "label": "Fortbildung",
+      "type": "special",
+      "isValidated": true
+    },
+    "SPECIAL:EXP": {
+      "code": "EXP",
+      "label": "Externes Praktikum",
+      "type": "special",
+      "isValidated": true
+    }
+  }
+}

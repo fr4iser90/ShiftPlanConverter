@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Datenschutz – ShiftPlan Converter</title>
+    <meta name="description" content="Datenschutzerklärung für ShiftPlan Converter (com.fr4iser.shiftplan)">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="mb-6 flex flex-wrap gap-4 justify-between items-center">
+            <a href="index.html" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span>&larr;</span> Zurück zur Hauptseite
+            </a>
+            <a href="privacy-en.html" class="text-sm text-blue-500 hover:underline">English</a>
+        </div>
+        <div class="flex justify-between items-center mb-6 gap-4 flex-wrap">
+            <h1 class="text-3xl font-bold">Datenschutzerklärung</h1>
+            <div class="flex items-center gap-2">
+                <button type="button" id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus">☀️</button>
+                <button type="button" id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button type="button" id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-500 mb-6">
+            App: ShiftPlan Converter (<code>com.fr4iser.shiftplan</code>)<br>
+            Verantwortlich: Patrick Böhme (Fr4iser) ·
+            <a href="mailto:support@fr4iser.com" class="text-blue-500 hover:underline">support@fr4iser.com</a><br>
+            Stand: 2026-07-30
+        </p>
+
+        <section class="mb-8 space-y-4 text-gray-700">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">1. Kurzfassung</h2>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li>Die App holt dein LOGA3-Zeitprotokoll <strong>auf deinem Gerät</strong> und wandelt es in Schichten / Kalenderdaten um.</li>
+                    <li>Optional: <strong>Verdienstnachweis</strong> importieren und mit importierten Diensten vergleichen (Tab Prüfung) — ebenfalls nur lokal.</li>
+                    <li>Optional: Dienstplan-Fotos / Dateien für <strong>OCR</strong> — Erkennung nur auf dem Gerät.</li>
+                    <li><strong>Keine eigenen Server:</strong> Login, PDFs, Fotos, Schichten und Verdienstdaten werden nicht zu fr4iser.com oder anderen Betreiber-Servern hochgeladen — alles bleibt auf dem Gerät.</li>
+                    <li>Optional: <strong>Google Calendar</strong>-Sync nur mit deiner Zustimmung (Gerät ↔ Google).</li>
+                    <li>Keine Werbe-Tracker, kein Crashlytics/Sentry in der App.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">2. Welche Daten?</h2>
+                <div class="overflow-x-auto text-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="py-2 pr-3 font-semibold">Daten</th>
+                                <th class="py-2 pr-3 font-semibold">Zweck</th>
+                                <th class="py-2 font-semibold">Speicherung</th>
+                            </tr>
+                        </thead>
+                        <tbody class="align-top">
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">LOGA3-Benutzername / Passwort</td><td class="py-2 pr-3">Login im eingebetteten WebView</td><td class="py-2">Secure Store (Keystore / Keychain)</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Tenant-URL</td><td class="py-2 pr-3">LOGA3-Adresse</td><td class="py-2">Lokal (AsyncStorage)</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Zeitprotokoll-PDFs, Schichtzeiten, AZK</td><td class="py-2 pr-3">Anzeige, Widgets, Export</td><td class="py-2">Lokal, AES-GCM verschlüsselt</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Verdienstnachweis-PDF / geparste Lohnarten, Brutto, Tarif (EG/Stufe)</td><td class="py-2 pr-3">Optionaler Tab Prüfung (Soll/Ist)</td><td class="py-2">Lokal, AES-GCM verschlüsselt</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Kamera-/Galerie-Fotos, lokale Importdateien</td><td class="py-2 pr-3">Optionale OCR / Datei-Import</td><td class="py-2">Lokal (Cache/Dokumente); keine Cloud-OCR</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Arbeitgeber-Pack / Mappings / Prüfprofile</td><td class="py-2 pr-3">Parser- und Abrechnungszuordnung</td><td class="py-2">Lokal (teils im App-Paket)</td></tr>
+                            <tr class="border-b border-gray-100"><td class="py-2 pr-3">Google-Konto / Kalender-ID</td><td class="py-2 pr-3">Optionaler Kalender-Sync</td><td class="py-2">Token nur im RAM; Kalender-ID lokal</td></tr>
+                            <tr><td class="py-2 pr-3">Support-Mail</td><td class="py-2 pr-3">Hilfe (opt-in)</td><td class="py-2">Über dein Mail-Programm; Samples anonymisiert</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">3. Weitergabe</h2>
+                <ul class="list-disc pl-5 space-y-1 text-sm">
+                    <li><strong>LOGA3:</strong> nur an die von dir konfigurierte Arbeitgeber-/Tenant-URL (HTTPS).</li>
+                    <li><strong>Google:</strong> nur wenn du „Google verbinden“ nutzt — Kalender-Scopes gemäß Google-Zustimmung.</li>
+                    <li><strong>GitHub:</strong> optional „Nach Updates suchen“ bzw. manuelle APK-Downloads.</li>
+                    <li><strong>Kein Verkauf</strong> von Daten, keine Werbepartner. Verdienstnachweise und Fotos werden nicht an Betreiber-Server gesendet.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">4. Rechte (DSGVO)</h2>
+                <p class="text-sm">
+                    Auskunft, Löschung, Einschränkung: in der App unter
+                    <strong>Einstellungen → Einrichtung → Alle lokalen Daten löschen</strong>
+                    (inkl. Schichten, PDFs und Verdienstnachweise)
+                    bzw. App deinstallieren. Kontakt:
+                    <a href="mailto:support@fr4iser.com" class="text-blue-500 hover:underline">support@fr4iser.com</a>.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">5. Hinweis</h2>
+                <p class="text-sm">
+                    Die App ist experimentell. Parser, Kalender-Sync und Abrechnungsprüfung ersetzen keine offizielle
+                    LOGA3-/Arbeitgeber-Auskunft. Du prüfst Schichten, Zeiten und Abrechnung selbst; insbesondere die
+                    Soll-Berechnung (Abrechnungsprüfung) kann unvollständig oder falsch sein.
+                </p>
+                <p class="text-sm mt-3">
+                    In Packs hinterlegte Tarifwerte orientieren sich an öffentlich veröffentlichten
+                    <strong>AVR Caritas</strong>-Tabellen (eigene JSON-Struktur, kein PDF-Import).
+                    Sie sind mit Anlage, Regionalkommission und Gültigkeits-/Stand-Hinweis versehen, aber es besteht
+                    <strong>keine Gewähr</strong> für Vollständigkeit, Richtigkeit oder Aktualität.
+                    Keine Verbindung zur Caritas; keine offizielle Tarifauskunft.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            function setTheme(theme) {
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            setTheme(localStorage.getItem('theme') || 'theme-light');
+            document.getElementById('themeLightBtn')?.addEventListener('click', () => setTheme('theme-light'));
+            document.getElementById('themeDarkBtn')?.addEventListener('click', () => setTheme('theme-dark'));
+            document.getElementById('themeSepiaBtn')?.addEventListener('click', () => setTheme('theme-sepia'));
+        });
+    </script>
+</body>
+</html>

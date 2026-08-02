@@ -1,15 +1,117 @@
 /**
  * convert.js
- * Enthält die Logik zur Veredelung der geparsten Daten.
- * Verknüpft Rohdaten mit Mappings und führt Dienste zusammen.
+ * Enrich parsed PDF data with mappings; route Zeitabrechnung vs code-grid.
  */
 
-export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMapping, parserFn) {
-    if (!parserFn) {
-        throw new Error("Kein Parser-Funktion übergeben!");
+import { normalizeMapping, resolvePresetTable } from './mappingNormalize.js';
+import { looksLikeCodeGrid, parsePdfCodeGrid } from './parsers/codeGrid.bundle.js';
+
+/**
+ * Structural code-grid signals (independent of whether the active mapping
+ * recognizes the printed duty codes).
+ */
+export function isCodeGridShell(pdfText, pdfConfig) {
+    const t = String(pdfText || '');
+    if (!t.trim()) return false;
+    const cg = pdfConfig?.codeGrid;
+    if (!cg) return false;
+    if (cg.rejectPatterns?.some((p) => {
+        try { return new RegExp(p, 'i').test(t); } catch { return false; }
+    })) return false;
+    if (cg.requirePatterns?.length && !cg.requirePatterns.every((p) => {
+        try { return new RegExp(p, 'i').test(t); } catch { return false; }
+    })) return false;
+    if (!/[A-Za-zÄÖÜäöüß]{2,},\s*[A-Za-zÄÖÜäöüß]/.test(t)) return false;
+    return true;
+}
+
+function codeGridDepartmentHint(pdfText) {
+    const t = String(pdfText || '');
+    if (/Anästhesie|Anaesthesie/i.test(t) && /Ärzte|Aerzte/i.test(t)) {
+        return 'Ärzte → OP · Anästhesie';
+    }
+    if (/ATA|OTA|OP-Pflege|Pflege/i.test(t) && /Mandant/i.test(t)) {
+        return 'Pflege → passenden OP-Bereich';
+    }
+    return 'passende Berufsgruppe / Bereich';
+}
+
+/**
+ * @param {string} pdfText
+ * @param {string} profession
+ * @param {string} bereich
+ * @param {string} preset
+ * @param {object|null} hospitalMapping
+ * @param {Function|null} parserFn - Zeitabrechnung parser
+ * @param {{ pdfConfig?: object|null, personFilter?: string|null }} [opts]
+ */
+export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMapping, parserFn, opts = {}) {
+    const mapping = normalizeMapping(hospitalMapping);
+    const pdfConfig = opts.pdfConfig || null;
+    const personFilter = opts.personFilter || null;
+    const shell = isCodeGridShell(pdfText, pdfConfig);
+    const deptHint = codeGridDepartmentHint(pdfText);
+
+    if (mapping && looksLikeCodeGrid(pdfText, pdfConfig, mapping, preset || undefined)) {
+        let grid = parsePdfCodeGrid(pdfText, pdfConfig, {
+            mapping,
+            preset: preset || 'default',
+            personFilter,
+        });
+        let entries = [...(grid.mainEntries || [])].sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
+        let hint = null;
+        if (!entries.length && personFilter) {
+            grid = parsePdfCodeGrid(pdfText, pdfConfig, {
+                mapping,
+                preset: preset || 'default',
+                personFilter: null,
+            });
+            const all = [...(grid.mainEntries || [])];
+            if (all.length) {
+                hint =
+                    `Codeplan: für „${personFilter}“ keine Schichten mit diesem Mapping. ` +
+                    `Namen prüfen (Nachname, Vorname) oder Filter leeren — oder ${deptHint} wählen.`;
+            } else {
+                hint =
+                    `Codeplan erkannt, aber mit aktuellem Mapping keine auswertbaren Kürzel. Bitte ${deptHint} wählen.`;
+            }
+            entries = [];
+        } else if (!entries.length) {
+            hint =
+                `Codeplan erkannt, aber mit aktuellem Mapping keine Schichten. Bitte ${deptHint} wählen.`;
+        }
+        return {
+            entries,
+            year: grid.year || null,
+            month: grid.month || null,
+            summary: null,
+            summaries: [],
+            source: 'code-grid',
+            hint,
+        };
     }
 
-    // 1. Roh-Daten mit dem spezifischen Parser extrahieren
+    if (shell) {
+        return {
+            entries: [],
+            year: null,
+            month: null,
+            summary: null,
+            summaries: [],
+            source: 'code-grid',
+            hint:
+                `Abteilungs-Codeplan erkannt (Mandant / Namenszeilen), aber das aktuelle Mapping passt nicht ` +
+                `(Dienstkürzel werden nicht erkannt). Bitte ${deptHint} wählen` +
+                (personFilter ? ` und „Mein Name“ prüfen („${personFilter}“).` : '.'),
+        };
+    }
+
+    if (!parserFn) {
+        throw new Error('Kein Parser-Funktion übergeben!');
+    }
+
     const {
         year,
         month,
@@ -20,14 +122,13 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
     } = parserFn(pdfText);
 
     if (!year || !month) {
-        return { entries: [], year: null, month: null, summary: null, summaries: [] };
+        return { entries: [], year: null, month: null, summary: null, summaries: [], source: 'zeitabrechnung' };
     }
 
-    const mapping = (hospitalMapping && hospitalMapping.presets && hospitalMapping.presets[preset]) || {};
-    
-    // Sonderkürzel (Urlaub etc.) aus dem Mapping extrahieren
+    const table = resolvePresetTable(mapping, preset);
+
     const specialCodes = {};
-    Object.entries(mapping).forEach(([key, value]) => {
+    Object.entries(table).forEach(([key, value]) => {
         if (key.startsWith('SPECIAL:')) {
             const code = typeof value === 'object' ? value.code : value;
             specialCodes[code] = true;
@@ -35,35 +136,30 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
     });
 
     const finalEntries = [];
-    
-    // Hilfsfunktion für Datum +1
+
     function addDays(dateStr, days) {
         const d = new Date(dateStr);
         d.setDate(d.getDate() + days);
         return d.toISOString().split('T')[0];
     }
 
-    // --- Pass 2: Logik zur Schichterkennung und Zusammenführung ---
     const handledMainIndices = new Set();
     const handledBereitschaftIndices = new Set();
 
-    // 2.1 Spezialdienste: Tagdienst + Bereitschaft (z.B. MO / Langdienst)
     for (let m = 0; m < rawMain.length; m++) {
         const mainEntry = rawMain[m];
-        if (mainEntry.allDay) continue; // Urlaub/Feiertag ignorieren
+        if (mainEntry.allDay) continue;
 
         let chain = [mainEntry];
         let currentEnd = mainEntry.end;
         let currentDate = mainEntry.date;
 
-        // Suche anschließende Bereitschaftsdienste
         for (let loop = 0; loop < 10; loop++) {
             let found = false;
             for (let b = 0; b < rawBereitschaft.length; b++) {
                 if (handledBereitschaftIndices.has(b)) continue;
                 const bEntry = rawBereitschaft[b];
-                
-                // Direkt am gleichen Tag anschließend
+
                 if (bEntry.date === currentDate && bEntry.start === currentEnd) {
                     chain.push(bEntry);
                     currentEnd = bEntry.end;
@@ -71,7 +167,6 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
                     found = true;
                     break;
                 }
-                // Über Mitternacht (00:00)
                 if (bEntry.start === '00:00' && bEntry.date === addDays(currentDate, 1) && currentEnd === '00:00') {
                     chain.push(bEntry);
                     currentEnd = bEntry.end;
@@ -85,11 +180,10 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         }
 
         if (chain.length > 1) {
-            // Kombinierter Dienst (z.B. MO)
             const timeKey = `${mainEntry.start}-${chain[chain.length - 1].end}`;
-            const mappingValue = mapping[timeKey];
-            
-            let shiftType = mappingValue?.code || "MO"; // Fallback MO
+            const mappingValue = table[timeKey];
+
+            let shiftType = mappingValue?.code || 'MO';
             let isValidated = mappingValue?.isValidated || true;
 
             finalEntries.push({
@@ -105,21 +199,18 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         }
     }
 
-    // 2.2 Normale Schichten verarbeiten
     for (let i = 0; i < rawMain.length; i++) {
         if (handledMainIndices.has(i)) continue;
         const entry = rawMain[i];
 
         if (entry.allDay) {
-            // Prüfen ob für dieses Kürzel eine Farbe/Mapping existiert
-            const mappingValue = specialCodes[entry.type] ? entry.type : null;
             finalEntries.push({ ...entry, isValidated: true });
             continue;
         }
 
         const timeKey = `${entry.start}-${entry.end}`;
-        const mappingValue = mapping[timeKey];
-        
+        const mappingValue = table[timeKey];
+
         let shiftType = `⚠️ ${timeKey}`;
         let isValidated = false;
 
@@ -140,12 +231,11 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         });
     }
 
-    // 2.3 Übrig gebliebene Bereitschaften
     for (let i = 0; i < rawBereitschaft.length; i++) {
         if (handledBereitschaftIndices.has(i)) continue;
         const item = rawBereitschaft[i];
         const timeKey = `${item.start}-${item.end}`;
-        const mappingValue = mapping[timeKey];
+        const mappingValue = table[timeKey];
 
         finalEntries.push({
             type: mappingValue?.code || `BEREIT_${timeKey}`,
@@ -169,6 +259,7 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         month,
         summary: allSummaries[allSummaries.length - 1] || null,
         summaries: allSummaries,
+        source: 'zeitabrechnung',
     };
 }
 
@@ -192,7 +283,7 @@ function pickBereitschaftDetails(chainParts) {
 }
 
 export function convertParsedEntriesToCSV(entries) {
-    let csv = "Datum,Code,Start,Ende\n";
+    let csv = 'Datum,Code,Start,Ende\n';
     entries.forEach(entry => {
         let displayDate = entry.date || '';
         if (displayDate) {
@@ -204,7 +295,7 @@ export function convertParsedEntriesToCSV(entries) {
                     year: 'numeric'
                 });
             } catch (e) {
-                // Fallback auf Original
+                // Fallback
             }
         }
         if (entry.allDay) {

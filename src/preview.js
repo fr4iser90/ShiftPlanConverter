@@ -1,4 +1,5 @@
 import { loadSpecialShiftTypes } from './shiftTypesLoader.js';
+import { resolvePresetTable } from './mappingNormalize.js';
 
 /**
  * Escapes HTML special characters to prevent XSS attacks
@@ -74,8 +75,8 @@ export async function renderPreview(entries, currentMapping = null, currentPrese
         
         // Finde den passenden Code für Spezialtypen (z.B. URLAUB -> U)
         let resolvedCode = entry.type;
-        if (currentMapping && currentPreset) {
-            const presetData = currentMapping.presets[currentPreset] || {};
+        if (currentMapping) {
+            const presetData = resolvePresetTable(currentMapping, currentPreset);
             const specialKey = `SPECIAL:${entry.type}`;
             if (presetData[specialKey]) {
                 resolvedCode = typeof presetData[specialKey] === 'object' ? presetData[specialKey].code : presetData[specialKey];
@@ -129,15 +130,15 @@ function updateMissingShiftsUI(entries, mapping, preset) {
         return;
     }
 
-    const presetData = mapping.presets[preset] || {};
+    const presetData = resolvePresetTable(mapping, preset);
     const missingShifts = new Set();
 
     entries.forEach(entry => {
-        if (entry.isWork && entry.start && entry.end) {
+        if (entry.start && entry.end && String(entry.type || '').startsWith('⚠️')) {
+            missingShifts.add(`${entry.start}-${entry.end}`);
+        } else if (entry.isWork && entry.start && entry.end && !entry.type) {
             const timeRange = `${entry.start}-${entry.end}`;
-            if (!presetData[timeRange]) {
-                missingShifts.add(timeRange);
-            }
+            if (!presetData[timeRange]) missingShifts.add(timeRange);
         }
     });
 

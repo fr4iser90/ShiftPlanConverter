@@ -1,0 +1,511 @@
+{
+  "id": "st-elisabeth-pflege-krankenhaus",
+  "label": "Pflege · Krankenhaus (Anlage 31 · RK Ost)",
+  "tarifFamily": "avr-c-pflege",
+  "holidayRegion": "SN",
+  "hourDivisor": 173.92,
+  "fullWeekHours": 38.5,
+  "egRows": [
+    {
+      "eg": "P16",
+      "label": "P 16",
+      "salary": [
+        null,
+        5224.75,
+        5400.1,
+        5966.3,
+        6626.32,
+        6917.46
+      ],
+      "bd": [
+        null,
+        33.67,
+        33.67,
+        33.67,
+        33.67,
+        33.67
+      ]
+    },
+    {
+      "eg": "P15",
+      "label": "P 15",
+      "salary": [
+        null,
+        5117.31,
+        5277.79,
+        5678.98,
+        6159.13,
+        6342.5
+      ],
+      "bd": [
+        null,
+        31.45,
+        31.45,
+        31.45,
+        31.45,
+        31.45
+      ]
+    },
+    {
+      "eg": "P14",
+      "label": "P 14",
+      "salary": [
+        null,
+        4998.89,
+        5155.5,
+        5546.98,
+        6078.89,
+        6175.94
+      ],
+      "bd": [
+        null,
+        29.71,
+        29.71,
+        29.71,
+        29.71,
+        29.71
+      ]
+    },
+    {
+      "eg": "P13",
+      "label": "P 13",
+      "salary": [
+        null,
+        4880.5,
+        5033.21,
+        5414.97,
+        5690.63,
+        5761.81
+      ],
+      "bd": [
+        null,
+        27.85,
+        27.85,
+        27.85,
+        27.85,
+        27.85
+      ]
+    },
+    {
+      "eg": "P12",
+      "label": "P 12",
+      "salary": [
+        null,
+        4643.63,
+        4788.6,
+        5150.96,
+        5373.56,
+        5477.1
+      ],
+      "bd": [
+        null,
+        26.81,
+        26.81,
+        26.81,
+        26.81,
+        26.81
+      ]
+    },
+    {
+      "eg": "P11",
+      "label": "P 11",
+      "salary": [
+        null,
+        4406.81,
+        4544.0,
+        4886.96,
+        5114.72,
+        5218.26
+      ],
+      "bd": [
+        null,
+        25.85,
+        25.85,
+        25.85,
+        25.85,
+        25.85
+      ]
+    },
+    {
+      "eg": "P10",
+      "label": "P 10",
+      "salary": [
+        null,
+        4172.19,
+        4299.79,
+        4661.77,
+        4836.47,
+        4946.49
+      ],
+      "bd": [
+        null,
+        24.68,
+        24.68,
+        24.68,
+        24.68,
+        24.68
+      ]
+    },
+    {
+      "eg": "P9",
+      "label": "P 9",
+      "salary": [
+        null,
+        3980.74,
+        4172.19,
+        4299.79,
+        4545.29,
+        4648.82
+      ],
+      "bd": [
+        null,
+        24.29,
+        24.29,
+        24.29,
+        24.29,
+        24.29
+      ]
+    },
+    {
+      "eg": "P8",
+      "label": "P 8 (u. a. OTA/ATA nach Ausbildung)",
+      "salary": [
+        null,
+        3690.41,
+        3851.53,
+        4063.68,
+        4235.53,
+        4475.88
+      ],
+      "bd": [
+        null,
+        23.23,
+        23.23,
+        23.23,
+        23.23,
+        23.23
+      ]
+    },
+    {
+      "eg": "P7",
+      "label": "P 7",
+      "salary": [
+        null,
+        3500.06,
+        3690.41,
+        3986.67,
+        4137.48,
+        4292.83
+      ],
+      "bd": [
+        null,
+        22.24,
+        22.24,
+        22.24,
+        22.24,
+        22.24
+      ]
+    },
+    {
+      "eg": "P6",
+      "label": "P 6",
+      "salary": [
+        3003.7,
+        3178.1,
+        3353.66,
+        3727.04,
+        3822.23,
+        4001.7
+      ],
+      "bd": [
+        20.61,
+        20.61,
+        20.61,
+        20.61,
+        20.61,
+        20.61
+      ]
+    },
+    {
+      "eg": "P4",
+      "label": "P 4",
+      "salary": [
+        2932.67,
+        2994.35,
+        3040.09,
+        3074.6,
+        3102.69,
+        3144.8
+      ],
+      "bd": [
+        17.41,
+        17.41,
+        17.41,
+        17.41,
+        17.41,
+        17.41
+      ]
+    },
+    {
+      "eg": "EG15",
+      "label": "EG 15",
+      "salary": [
+        5810.85,
+        6190.84,
+        6614.69,
+        7193.34,
+        7788.58,
+        8180.17
+      ],
+      "bd": [
+        37.14,
+        37.14,
+        37.14,
+        37.14,
+        37.14,
+        37.14
+      ]
+    },
+    {
+      "eg": "EG14",
+      "label": "EG 14",
+      "salary": [
+        5282.81,
+        5626.88,
+        6076.23,
+        6574.87,
+        7130.7,
+        7529.74
+      ],
+      "bd": [
+        34.25,
+        34.25,
+        34.25,
+        34.25,
+        34.25,
+        34.25
+      ]
+    },
+    {
+      "eg": "EG13",
+      "label": "EG 13",
+      "salary": [
+        4886.81,
+        5263.92,
+        5693.21,
+        6159.29,
+        6707.74,
+        7005.36
+      ],
+      "bd": [
+        32.76,
+        32.76,
+        32.76,
+        32.76,
+        32.76,
+        32.76
+      ]
+    },
+    {
+      "eg": "EG12",
+      "label": "EG 12",
+      "salary": [
+        4402.82,
+        4836.75,
+        5343.86,
+        5906.53,
+        6566.78,
+        6880.05
+      ],
+      "bd": [
+        30.98,
+        30.98,
+        30.98,
+        30.98,
+        30.98,
+        30.98
+      ]
+    },
+    {
+      "eg": "EG11",
+      "label": "EG 11",
+      "salary": [
+        4257.18,
+        4656.29,
+        5031.3,
+        5438.18,
+        5995.01,
+        6308.31
+      ],
+      "bd": [
+        28.34,
+        28.34,
+        28.34,
+        28.34,
+        28.34,
+        28.34
+      ]
+    },
+    {
+      "eg": "EG10",
+      "label": "EG 10",
+      "salary": [
+        4112.49,
+        4425.21,
+        4780.7,
+        5166.25,
+        5595.58,
+        5736.56
+      ],
+      "bd": [
+        26.11,
+        26.11,
+        26.11,
+        26.11,
+        26.11,
+        26.11
+      ]
+    },
+    {
+      "eg": "EG9c",
+      "label": "EG 9c",
+      "salary": [
+        3999.02,
+        4277.98,
+        4581.35,
+        4908.24,
+        5259.65,
+        5511.57
+      ],
+      "bd": [
+        26.02,
+        26.02,
+        26.02,
+        26.02,
+        26.02,
+        26.02
+      ]
+    },
+    {
+      "eg": "EG9b",
+      "label": "EG 9b",
+      "salary": [
+        3768.81,
+        4027.23,
+        4191.3,
+        4676.86,
+        4964.58,
+        5297.87
+      ],
+      "bd": [
+        24.67,
+        24.67,
+        24.67,
+        24.67,
+        24.67,
+        24.67
+      ]
+    }
+  ],
+  "fixedLa": [
+    "100",
+    "2Y1",
+    "2Z7"
+  ],
+  "defaults": {
+    "shiftAllowanceFull": 315,
+    "vlAg": 0
+  },
+  "dienstarten": [
+    {
+      "id": "NIGHT",
+      "name": "Nachtdienst (Bereitschaft)",
+      "kat": "Bereitschaft",
+      "matchType": "night",
+      "hours": {
+        "paidBd": 6.03,
+        "bdNight": 5,
+        "bdNight004": 4
+      }
+    },
+    {
+      "id": "WORK",
+      "name": "Arbeit (Früh/Mittel/Spät)",
+      "kat": "Arbeit",
+      "matchType": "work",
+      "hours": {}
+    },
+    {
+      "id": "LONG",
+      "name": "Langdienst",
+      "kat": "Arbeit",
+      "matchType": "long",
+      "hours": {}
+    },
+    {
+      "id": "ONCALL",
+      "name": "Ruf-/Kurzbereitschaft",
+      "kat": "Rufdienst",
+      "matchType": "oncall",
+      "hours": {}
+    }
+  ],
+  "lohnarten": [
+    {
+      "la": "100",
+      "text": "Tarifliches Grundgehalt",
+      "kind": "gross"
+    },
+    {
+      "la": "2Y1",
+      "text": "Zulage §12(4) Anlage 31",
+      "kind": "gross"
+    },
+    {
+      "la": "2Z7",
+      "text": "Zulage §12(3) Anlage 31",
+      "kind": "gross"
+    },
+    {
+      "la": "245",
+      "text": "Schichtzulage",
+      "kind": "gross"
+    },
+    {
+      "la": "304",
+      "text": "Bereitschaftsdienst",
+      "kind": "gross"
+    },
+    {
+      "la": "314",
+      "text": "Nachtzuschlag",
+      "kind": "zuschlag"
+    },
+    {
+      "la": "316",
+      "text": "Nachtzuschlag Bereitschaft",
+      "kind": "zuschlag"
+    },
+    {
+      "la": "317",
+      "text": "Nachtzuschlag Bereitschaft (00-04)",
+      "kind": "zuschlag"
+    },
+    {
+      "la": "362",
+      "text": "Samstagszuschlag",
+      "kind": "zuschlag"
+    },
+    {
+      "la": "34U",
+      "text": "U/K-Aufschlag Urlaub",
+      "kind": "gross"
+    }
+  ],
+  "notes": [
+    "egRows: AVR Caritas Anlage 31 Krankenhaus — Anhang B (P) + Anhang A (EG) Tabellenentgelt und Anhang C Stundenentgelte als bd[]; RK Ost gültig 1.1.2026–31.12.2026 (102,5 % BK-Mittel 1.7.2025). Eigene JSON-Struktur, kein PDF-Import.",
+    "Rolle→Gruppe (Anhalt Anlage 31 Anhang D): OTA/ATA mit Ausbildung typ. P 8; Fachweiterbildung oft P 9; Stations-/Wohnbereichsleitung und Spezialbereiche (z. B. Wundmanagement) nach Tätigkeitsmerkmalen — User wählt EG/P + Stufe (oder VN).",
+    "Zulagen 2Y1/2Z7 und Schichtzulage: weiter primär aus Verdienstnachweis (keine persönlichen Defaults im Pack).",
+    "Dienstkürzel + Zeiten nur aus Pack-Mapping (type work|night|long|oncall). B38/B39 night-Kalibrierung bis Feinjustierung."
+  ]
+}

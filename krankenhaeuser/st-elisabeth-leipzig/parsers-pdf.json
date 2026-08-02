@@ -1,0 +1,113 @@
+{
+  "engine": "pdf-payroll",
+  "scoreHints": ["Abrechnungsmonat", "Zeitabrechnung", "KO*", "GE*", "Bereitschaft", "Mandant"],
+  "monthHeader": {
+    "pattern": "Abrechnungsmonat\\s+(\\d{2})/(\\d{4})",
+    "monthGroup": 1,
+    "yearGroup": 2
+  },
+  "codeGrid": {
+    "requirePatterns": ["Mandant\\s*:"],
+    "rejectPatterns": ["Abrechnungsmonat", "KO\\s*\\*"],
+    "monthHeader": {
+      "pattern": "\\b(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\\s+(\\d{4})\\b",
+      "monthGroup": 1,
+      "yearGroup": 2,
+      "monthNameMap": {
+        "januar": "01",
+        "februar": "02",
+        "maerz": "03",
+        "märz": "03",
+        "april": "04",
+        "mai": "05",
+        "juni": "06",
+        "juli": "07",
+        "august": "08",
+        "september": "09",
+        "oktober": "10",
+        "november": "11",
+        "dezember": "12"
+      }
+    },
+    "dayHeaderPattern": "1\\s+2\\s+3\\s+4\\b",
+    "skipLinePatterns": ["^Mandant\\s*:", "^Ver\\.:", "_{5,}", "Lang\\s+Heike"],
+    "minCodeHits": 10
+  },
+  "mainSectionRestart": "Zeitabrechnung",
+  "onCallSection": "Bereitschaftsdienste",
+  "shift": {
+    "pattern": "^\\s*(\\d{2})\\s+\\S+\\s+KO\\*\\s+(\\d{2}:\\d{2})\\s+GE\\*\\s+(\\d{2}:\\d{2})(?:\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([+-]?[\\d,]+)\\s+([\\d,]+))?",
+    "type": "WORK",
+    "dayGroup": 1,
+    "startGroup": 2,
+    "endGroup": 3,
+    "extra": {
+      "breakMinutes": 4,
+      "pepTarget": 5,
+      "contractTarget": 6,
+      "actual": 7,
+      "timeAccountDaily": 8,
+      "timeAccountCumulative": 9
+    }
+  },
+  "allDay": [
+    {
+      "pattern": "^\\s*(\\d{2})\\s+\\S+\\s+(URLTV|URLAUB)\\b",
+      "dayGroup": 1,
+      "type": "URLAUB"
+    },
+    {
+      "pattern": "^\\s*(\\d{2})\\s+\\S+\\s+(KROAU|KRANK|KR)\\b",
+      "dayGroup": 1,
+      "typeFromGroup": 2,
+      "normalize": { "KR": "KRANK" }
+    },
+    {
+      "pattern": "^\\s*(\\d{2})\\s+\\S+\\s+FEIER",
+      "dayGroup": 1,
+      "type": "FEIERTAG"
+    }
+  ],
+  "onCall": {
+    "pattern": "^\\s*(\\d{2}\\.\\d{2}\\.\\d{4})\\s+.*?(\\d{2}:\\d{2})\\s+(\\d{2}:\\d{2}).*?(\\d+)\\s+(\\d+)\\s+([\\d,]+)\\s*$",
+    "fallbackPattern": "^\\s*(\\d{2}\\.\\d{2}\\.\\d{4})\\s+.*?(\\d{2}:\\d{2})\\s+(\\d{2}:\\d{2})",
+    "type": "BEREIT",
+    "dateGroup": 1,
+    "startGroup": 2,
+    "endGroup": 3,
+    "onCallPercentGroup": 5,
+    "onCallRatedGroup": 6
+  },
+  "summary": [
+    {
+      "field": "carryOverPreviousMonth",
+      "pattern": "(?:Ü|Ue|U)bertrag\\s+aus\\s+Vormonat\\s+([+-]?[\\d,]+)",
+      "group": 1
+    },
+    {
+      "field": "carryOverNextMonth",
+      "pattern": "(?:Ü|Ue|U)bertrag\\s+in\\s+Folgemonat\\s+([+-]?[\\d,]+)",
+      "group": 1
+    },
+    {
+      "field": "periodActual",
+      "pattern": "Periode\\s*\\([^)]+\\)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([\\d,]+)\\s+([+-]?[\\d,]+)",
+      "groups": {
+        "periodPepTarget": 1,
+        "periodContractTarget": 2,
+        "periodActual": 3,
+        "periodBalance": 4
+      }
+    },
+    {
+      "field": "onCallPayout",
+      "pattern": "Bereitschaft\\s+zur\\s+Auszahlung\\s+([+-]?[\\d,]+)",
+      "group": 1
+    },
+    {
+      "field": "onCallTimeAccount",
+      "pattern": "Bereitschaft\\s+in\\s+das\\s+AZK\\s+([+-]?[\\d,]+)",
+      "group": 1
+    }
+  ]
+}

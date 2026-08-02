@@ -5,7 +5,8 @@
       "id": "pflege",
       "label": "Pflegedienst",
       "areas": [
-        { "id": "op-bereich", "label": "OP-Bereich", "mapping": "mappings/pflege/op.json" },
+        { "id": "op-ata", "label": "OP · ATA", "mapping": "mappings/pflege/op-ata.json", "supported": true },
+        { "id": "op-bereich", "label": "OP · Pflege (Presets)", "mapping": "mappings/pflege/op.json", "supported": true },
         { "id": "station1", "label": "Station 1", "mapping": "mappings/pflege/station.json" },
         { "id": "station2", "label": "Station 2", "mapping": "mappings/pflege/station.json" },
         { "id": "station3", "label": "Station 3", "mapping": "mappings/pflege/station.json" },
@@ -31,7 +32,8 @@
       "id": "aerzte",
       "label": "Ärztlicher Dienst",
       "areas": [
-        { "id": "op-bereich", "label": "OP-Bereich", "mapping": "mappings/aerzte/op.json" },
+        { "id": "op-anaesthesie", "label": "OP · Anästhesie", "mapping": "mappings/aerzte/op-anaesthesie.json", "supported": true },
+        { "id": "op-bereich", "label": "OP · Stub (legacy)", "mapping": "mappings/aerzte/op.json", "supported": false },
         { "id": "station1", "label": "Station 1", "mapping": "mappings/aerzte/station.json" },
         { "id": "station2", "label": "Station 2", "mapping": "mappings/aerzte/station.json" },
         { "id": "station3", "label": "Station 3", "mapping": "mappings/aerzte/station.json" },

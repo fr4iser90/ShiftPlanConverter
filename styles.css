@@ -219,7 +219,9 @@ input:focus, select:focus, textarea:focus {
   color: var(--fg);
 }
 .theme-dark .bg-blue-500,
-.theme-sepia .bg-blue-500 {
+.theme-sepia .bg-blue-500,
+.theme-dark #payrollCheckBtn,
+.theme-sepia #payrollCheckBtn {
   background: var(--accent);
   color: #fff;
 }
@@ -273,6 +275,7 @@ input:focus, select:focus, textarea:focus {
 /* Vorschau- und Dropzone-Boxen */
 #previewContent,
 #dropzone,
+#payslipDropzone,
 .card {
   background: var(--card-bg) !important;
   color: var(--fg) !important;
@@ -283,6 +286,18 @@ input:focus, select:focus, textarea:focus {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
 }
 
+#dropzone,
+#payslipDropzone {
+  border-style: dashed !important;
+  border-width: 2px !important;
+  cursor: pointer;
+}
+
+#dropzone:hover,
+#payslipDropzone:hover {
+  border-color: var(--accent) !important;
+}
+
 .card-interactive:hover {
     box-shadow: var(--shadow-md);
     border-color: var(--accent-soft) !important;
@@ -291,7 +306,8 @@ input:focus, select:focus, textarea:focus {
 /* Download- und Konvertieren-Button */
 #downloadBtn,
 #convertBtn,
-#icsExportBtn {
+#icsExportBtn,
+#payrollCheckBtn {
   background: var(--accent) !important;
   color: #fff !important;
   border: none !important;
@@ -300,7 +316,8 @@ input:focus, select:focus, textarea:focus {
 
 #downloadBtn:hover:not(:disabled),
 #convertBtn:hover:not(:disabled),
-#icsExportBtn:hover:not(:disabled) {
+#icsExportBtn:hover:not(:disabled),
+#payrollCheckBtn:hover:not(:disabled) {
     background: var(--accent-soft) !important;
     transform: translateY(-1px);
     box-shadow: var(--shadow-md);

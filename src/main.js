@@ -3,7 +3,7 @@
  * Zentrale Steuerung der App, verbindet alle Module.
  */
 
-import { loadHospitalConfig, loadMapping, loadHospitalParser, loadSpecialShiftTypes } from './shiftTypesLoader.js';
+import { loadHospitalConfig, loadMapping, loadHospitalParser, loadSpecialShiftTypes, loadPdfParserConfig } from './shiftTypesLoader.js';
 import { initPDFLoad } from './pdfLoader.js';
 import { parseTimeSheet, convertParsedEntriesToCSV } from './convert.js';
 import { renderPreview } from './preview.js';
@@ -11,6 +11,8 @@ import { initGoogleCalendar, syncToCalendar } from './google.js';
 import { exportToICS } from './icsGenerator.js';
 import { sendStructureFeedback, sendMappingProposal } from './api.js';
 import { initOptionalDataPrefs, saveMonthSummaries, renderMonthSummariesFromStorage, extractMonthSummariesFromText } from './monthSummary.js';
+import { resolvePresetTable } from './mappingNormalize.js';
+import { initPayrollUi, refreshPayrollTariffNotice } from './payrollUi.js';
 
 /**
  * Escapes HTML special characters to prevent XSS attacks
@@ -27,9 +29,26 @@ function escapeHtml(str) {
 let currentHospitalConfig = null;
 let currentMapping = null;
 let currentParser = null;
+let currentPdfConfig = null;
 let currentKrankenhaus = 'st-elisabeth-leipzig';
 let isEditMode = false;
 let lastRawText = "";
+let payrollUiApi = null;
+
+const PERSON_FILTER_KEY = 'spc_person_filter';
+
+function getPersonFilter() {
+    const el = document.getElementById('personFilterInput');
+    if (el) return el.value.trim();
+    return localStorage.getItem(PERSON_FILTER_KEY) || '';
+}
+
+function parseOpts() {
+    return {
+        pdfConfig: currentPdfConfig,
+        personFilter: getPersonFilter() || null,
+    };
+}
 
 let appConfig = {
     maintainerEmail: '',
@@ -67,6 +86,20 @@ async function loadAppConfig() {
     }
 }
 
+async function loadAppVersion() {
+    const el = document.getElementById('appVersionLabel');
+    if (!el) return;
+    try {
+        const response = await fetch('src/version.json');
+        if (!response.ok) throw new Error(response.statusText);
+        const v = await response.json();
+        el.textContent = v.date ? `Version ${v.version} (${v.date})` : `Version ${v.version}`;
+    } catch (e) {
+        console.warn('version.json nicht ladbar', e);
+        el.textContent = 'Version —';
+    }
+}
+
 /**
  * Hilfsfunktionen für Schichtfarben
  */
@@ -86,7 +119,6 @@ async function getShiftColors() {
 
     const specialColors = {};
     if (currentMapping && currentMapping.presets) {
-        // Suche in allen Presets nach SPECIAL: Kürzeln und weise ihnen die Sonderfarben zu
         Object.values(currentMapping.presets).forEach(preset => {
             Object.entries(preset).forEach(([key, value]) => {
                 if (key.startsWith('SPECIAL:')) {
@@ -99,6 +131,7 @@ async function getShiftColors() {
             });
         });
     }
+
 
     const allColors = {
         'N': '#ef4444', 
@@ -132,17 +165,21 @@ async function saveShiftColor(code, color) {
  * Aktualisiert die Vorschau basierend auf dem aktuellen Mapping und dem letzten geladenen PDF-Text.
  */
 async function refreshPreview() {
-    if (!lastRawText || !currentParser) return;
+    if (!lastRawText || (!currentParser && !currentPdfConfig)) return;
 
     const presetSelect = document.getElementById('presetSelect');
     const preset = presetSelect ? presetSelect.value : '';
     const profession = document.getElementById('professionSelect')?.value;
     const bereich = document.getElementById('bereichSelect')?.value;
 
-    const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser);
-    localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
-    saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
-    await renderPreview(parsed.entries, currentMapping, preset);
+    try {
+        const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser, parseOpts());
+        localStorage.setItem('parsedEntries', JSON.stringify(parsed.entries));
+        saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
+        await renderPreview(parsed.entries, currentMapping, preset);
+    } catch (e) {
+        console.warn('refreshPreview', e);
+    }
 }
 
 /**
@@ -173,6 +210,7 @@ async function reloadHospitalAndUI() {
         console.log("Initialisiere Krankenhaus:", currentKrankenhaus);
         currentHospitalConfig = await loadHospitalConfig(currentKrankenhaus);
         currentParser = await loadHospitalParser(currentKrankenhaus);
+        currentPdfConfig = await loadPdfParserConfig(currentKrankenhaus);
         updateGroupOptions();
         
         // WICHTIG: Event-Listener für Dropdowns sicherstellen
@@ -278,6 +316,15 @@ async function loadCurrentMapping() {
     } else {
         currentMapping = null;
     }
+
+    if (payrollUiApi?.refreshTariffNotice) {
+        await payrollUiApi.refreshTariffNotice();
+    } else {
+        await refreshPayrollTariffNotice({
+            krankenhaus: () => currentKrankenhaus,
+            mapping: () => currentMapping,
+        });
+    }
 }
 
 async function updatePresetOptions() {
@@ -304,17 +351,16 @@ async function updatePresetOptions() {
 
 function getCurrentShiftTypes() {
     const presetSelect = document.getElementById('presetSelect');
-    if (!presetSelect || !currentMapping || !currentMapping.presets) return {};
+    if (!presetSelect || !currentMapping) return {};
 
     const preset = presetSelect.value;
-    const types = currentMapping.presets[preset] || {};
-    
-    // Standard-Sonderkürzel hinzufügen, falls nicht vorhanden
+    const types = { ...resolvePresetTable(currentMapping, preset) };
+
     if (!Object.keys(types).some(k => k.startsWith('SPECIAL:'))) {
-        types["SPECIAL:URLAUB"] = { code: "U", isValidated: true };
-        types["SPECIAL:KRANK"] = { code: "K", isValidated: true };
+        types['SPECIAL:URLAUB'] = { code: 'U', isValidated: true };
+        types['SPECIAL:KRANK'] = { code: 'K', isValidated: true };
     }
-    
+
     return types;
 }
 
@@ -817,11 +863,24 @@ initPDFLoad({
                     continue;
                 }
                 rawParts.push(`\n\n--- ${file.name} ---\n\n${pdfText}`);
-                const parsed = parseTimeSheet(pdfText, profession, bereich, preset, currentMapping, currentParser);
+                const parsed = parseTimeSheet(
+                    pdfText,
+                    profession,
+                    bereich,
+                    preset,
+                    currentMapping,
+                    currentParser,
+                    parseOpts()
+                );
                 if (!parsed.entries || parsed.entries.length === 0) {
-                    failed.push(`${file.name}: keine Schichten erkannt`);
+                    failed.push(
+                        parsed.hint
+                            ? `${file.name}: ${parsed.hint}`
+                            : `${file.name}: keine Schichten erkannt`
+                    );
                 } else {
                     entryArrays.push(parsed.entries);
+                    if (parsed.hint) failed.push(`${file.name}: Hinweis — ${parsed.hint}`);
                 }
             } catch (err) {
                 console.error(file.name, err);
@@ -975,11 +1034,38 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // Dropdown listeners are initialized via reloadHospitalAndUI -> setupDropdownListeners
 
+    const personFilterInput = document.getElementById('personFilterInput');
+    if (personFilterInput) {
+        personFilterInput.value = localStorage.getItem(PERSON_FILTER_KEY) || '';
+        personFilterInput.addEventListener('change', () => {
+            localStorage.setItem(PERSON_FILTER_KEY, personFilterInput.value.trim());
+            refreshPreview();
+        });
+    }
+
     reloadHospitalAndUI();
     initGoogleCalendar();
     initOptionalDataPrefs();
     renderMonthSummariesFromStorage();
     loadAppConfig();
+    loadAppVersion();
+    payrollUiApi = initPayrollUi({
+        krankenhaus: () => currentKrankenhaus,
+        mapping: () => currentMapping,
+        preset: () => document.getElementById('presetSelect')?.value || '',
+        getShiftEntries: () => {
+            try {
+                return JSON.parse(localStorage.getItem('parsedEntries') || '[]');
+            } catch {
+                return [];
+            }
+        },
+        extractTextFromPdfBuffer,
+    });
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
 
     // Hilfe-Modal Logik
     const helpBtn = document.getElementById('helpBtn');

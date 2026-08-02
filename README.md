@@ -2,6 +2,8 @@
 
 Eine Web-Anwendung zum Konvertieren von Dienstplan-PDFs und Synchronisieren mit Google Kalender.
 
+**Version:** siehe [`src/version.json`](src/version.json) · [Changelog](CHANGELOG.md) ([EN](CHANGELOG.en.md))
+
 ## Features
 
 - Lokale PDF-Verarbeitung (keine Uploads)

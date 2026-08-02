@@ -1,12 +1,13 @@
 /**
  * shiftTypesLoader.js
- * Lädt die Krankenhaus-Konfiguration, Schicht-Mappings und Parser.
+ * Load hospital config, shift mappings, PDF parser config, and payroll profiles.
  */
 
+import { normalizeMapping } from './mappingNormalize.js';
+
 /**
- * Lädt die config.json für das angegebene Krankenhaus.
- * @param {string} krankenhaus - z.B. "st-elisabeth-leipzig"
- * @returns {Promise<Object>} - Die Krankenhaus-Konfiguration
+ * @param {string} krankenhaus
+ * @returns {Promise<Object>}
  */
 export async function loadHospitalConfig(krankenhaus) {
   const url = `./krankenhaeuser/${krankenhaus}/config.json`;
@@ -18,10 +19,9 @@ export async function loadHospitalConfig(krankenhaus) {
 }
 
 /**
- * Lädt ein spezifisches Schicht-Mapping.
- * @param {string} krankenhaus - z.B. "st-elisabeth-leipzig"
- * @param {string} mappingPath - Pfad zum Mapping relativ zum Krankenhaus-Ordner
- * @returns {Promise<Object>} - Das Schicht-Mapping
+ * @param {string} krankenhaus
+ * @param {string} mappingPath
+ * @returns {Promise<Object>}
  */
 export async function loadMapping(krankenhaus, mappingPath) {
   const url = `./krankenhaeuser/${krankenhaus}/${mappingPath}`;
@@ -29,7 +29,40 @@ export async function loadMapping(krankenhaus, mappingPath) {
   if (!response.ok) {
     throw new Error(`Konnte Mapping ${mappingPath} nicht laden: ${response.statusText}`);
   }
-  return await response.json();
+  return normalizeMapping(await response.json());
+}
+
+/**
+ * Pack PDF engine config (code-grid detection patterns, etc.).
+ * @param {string} krankenhaus
+ * @returns {Promise<Object|null>}
+ */
+export async function loadPdfParserConfig(krankenhaus) {
+  const url = `./krankenhaeuser/${krankenhaus}/parsers-pdf.json`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string} krankenhaus
+ * @param {string} profilePath - relative to hospital folder
+ * @returns {Promise<Object|null>}
+ */
+export async function loadPayrollProfile(krankenhaus, profilePath) {
+  if (!profilePath) return null;
+  const url = `./krankenhaeuser/${krankenhaus}/${profilePath}`;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
 }
 
 /**
