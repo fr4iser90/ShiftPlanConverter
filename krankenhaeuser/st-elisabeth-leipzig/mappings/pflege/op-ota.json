@@ -1,0 +1,9 @@
+{
+  "department": "OP",
+  "role": "OTA",
+  "payroll": {
+    "supported": false
+  },
+  "colors": {},
+  "dutyCodes": {}
+}

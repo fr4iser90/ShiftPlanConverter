@@ -1,5 +1,5 @@
 /* Minimal PWA shell — caches UI only, never PDF payloads. */
-const CACHE = 'spc-shell-v1';
+const CACHE = 'spc-shell-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -24,8 +24,13 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // Never cache user documents / API-ish paths
   if (/\.pdf$/i.test(url.pathname)) return;
+
+  // Config + mappings always from network (avoid stale role/area JSON)
+  if (url.pathname.includes('/krankenhaeuser/') && url.pathname.endsWith('.json')) {
+    event.respondWith(fetch(req));
+    return;
+  }
 
   event.respondWith(
     caches.match(req).then((cached) => {

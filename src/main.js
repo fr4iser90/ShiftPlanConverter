@@ -35,6 +35,8 @@ let currentKrankenhaus = 'st-elisabeth-leipzig';
 let isEditMode = false;
 let lastRawText = "";
 let payrollUiApi = null;
+/** @type {Map<string, Array<{id:string,label:string,mapping:string,empty:boolean}>>} */
+const areaRolesCache = new Map();
 
 const PERSON_FILTER_KEY = 'spc_person_filter';
 const WORKPLACE_PREFS_KEY = 'spc_workplace_prefs';
@@ -43,6 +45,135 @@ function getPersonFilter() {
     const el = document.getElementById('personFilterInput');
     if (el) return el.value.trim();
     return localStorage.getItem(PERSON_FILTER_KEY) || '';
+}
+
+function setPersonFilter(name) {
+    const value = String(name || '').trim();
+    const el = document.getElementById('personFilterInput');
+    if (el) el.value = value;
+    localStorage.setItem(PERSON_FILTER_KEY, value);
+}
+
+/** Nach Codeplan-Parse: erkannte Namen in Select + Datalist + Modal. */
+function updateDetectedPeopleUI(people, { requirePick = false, openModal = false } = {}) {
+    const wrap = document.getElementById('personPickWrap');
+    const select = document.getElementById('personPickSelect');
+    const datalist = document.getElementById('personFilterSuggestions');
+    const names = [...new Set((people || []).map((n) => String(n || '').trim()).filter(Boolean))]
+        .sort((a, b) => a.localeCompare(b, 'de'));
+
+    if (datalist) {
+        datalist.innerHTML = '';
+        names.forEach((name) => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            datalist.appendChild(opt);
+        });
+    }
+
+    if (wrap && select) {
+        if (names.length < 2) {
+            wrap.style.display = 'none';
+            select.innerHTML = '';
+        } else {
+            const current = getPersonFilter();
+            select.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '— Bitte Person wählen —';
+            select.appendChild(placeholder);
+            names.forEach((name) => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
+            if (current) {
+                const match = names.find((n) => n.toLowerCase() === current.toLowerCase())
+                    || names.find((n) => n.toLowerCase().includes(current.toLowerCase()));
+                if (match) select.value = match;
+            }
+            wrap.style.display = 'block';
+            if (requirePick && !select.value) {
+                wrap.classList.add('ring-2', 'ring-amber-400', 'rounded-md', 'p-2');
+            } else {
+                wrap.classList.remove('ring-2', 'ring-amber-400', 'rounded-md', 'p-2');
+            }
+        }
+    }
+
+    if (openModal && names.length > 1 && !getPersonFilter()) {
+        openPersonPickModal(names);
+    }
+}
+
+function openPersonPickModal(names) {
+    const modal = document.getElementById('personPickModal');
+    const list = document.getElementById('personPickList');
+    const search = document.getElementById('personPickSearch');
+    const hint = document.getElementById('personPickModalHint');
+    if (!modal || !list) return;
+
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'de'));
+    if (hint) {
+        hint.textContent =
+            `Im Codeplan wurden ${sorted.length} Personen erkannt. Wähle deinen Namen — danach werden nur deine Schichten ausgewertet.`;
+    }
+
+    function renderList(filterText = '') {
+        const q = filterText.trim().toLowerCase();
+        list.innerHTML = '';
+        const shown = q
+            ? sorted.filter((n) => n.toLowerCase().includes(q))
+            : sorted;
+        if (!shown.length) {
+            const empty = document.createElement('p');
+            empty.className = 'text-sm text-gray-500 px-3 py-4';
+            empty.textContent = 'Kein Name passt zum Filter.';
+            list.appendChild(empty);
+            return;
+        }
+        shown.forEach((name) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className =
+                'w-full text-left px-3 py-2.5 rounded-md text-sm hover:bg-blue-50 border border-transparent hover:border-blue-200 transition-colors';
+            btn.textContent = name;
+            btn.addEventListener('click', () => {
+                applyPersonPick(name);
+            });
+            list.appendChild(btn);
+        });
+        list.scrollTop = 0;
+    }
+
+    if (search) {
+        search.value = '';
+        search.oninput = () => renderList(search.value);
+    }
+    renderList();
+    modal.style.display = 'flex';
+    search?.focus();
+}
+
+function closePersonPickModal() {
+    const modal = document.getElementById('personPickModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function applyPersonPick(name) {
+    setPersonFilter(name);
+    closePersonPickModal();
+    const pick = document.getElementById('personPickSelect');
+    if (pick) {
+        const names = Array.from(pick.options).map((o) => o.value).filter(Boolean);
+        if (!names.includes(name)) names.push(name);
+        updateDetectedPeopleUI(names, { requirePick: false });
+        pick.value = name;
+    }
+    refreshPreview();
+    const exportSection = document.getElementById('exportSection');
+    if (exportSection) exportSection.scrollIntoView({ behavior: 'smooth' });
 }
 
 function loadWorkplacePrefs() {
@@ -204,6 +335,7 @@ async function refreshPreview() {
 
     try {
         const parsed = parseTimeSheet(lastRawText, profession, bereich, preset, currentMapping, currentParser, parseOpts());
+        updateDetectedPeopleUI(parsed.people || [], { requirePick: !!parsed.personPickRequired });
         writeJsonStore('parsedEntries', parsed.entries);
         saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
         await renderPreview(parsed.entries, currentMapping, preset);
@@ -218,8 +350,10 @@ async function refreshPreview() {
 function getUserMappingKey() {
     const professionSelect = document.getElementById('professionSelect');
     const bereichSelect = document.getElementById('bereichSelect');
+    const presetSelect = document.getElementById('presetSelect');
     if (!professionSelect || !bereichSelect) return null;
-    return `mapping_${currentKrankenhaus}_${professionSelect.value}_${bereichSelect.value}`;
+    const role = presetSelect?.value ? `_${presetSelect.value}` : '';
+    return `mapping_${currentKrankenhaus}_${professionSelect.value}_${bereichSelect.value}${role}`;
 }
 
 function saveUserMapping(presets) {
@@ -240,24 +374,20 @@ async function reloadHospitalAndUI() {
         console.log("Initialisiere Krankenhaus:", currentKrankenhaus);
         const prefs = loadWorkplacePrefs();
         currentHospitalConfig = await loadHospitalConfig(currentKrankenhaus);
+        areaRolesCache.clear();
         currentParser = await loadHospitalParser(currentKrankenhaus);
         currentPdfConfig = await loadPdfParserConfig(currentKrankenhaus);
         updateGroupOptions();
-
-        // WICHTIG: Event-Listener für Dropdowns sicherstellen
         setupDropdownListeners();
 
         const professionSelect = document.getElementById('professionSelect');
         selectOptionIfPresent(professionSelect, prefs.profession);
 
         await updateAreaOptions();
-        const bereichSelect = document.getElementById('bereichSelect');
-        if (selectOptionIfPresent(bereichSelect, prefs.bereich)) {
-            await loadCurrentMapping();
-        }
+        selectOptionIfPresent(document.getElementById('bereichSelect'), prefs.bereich);
 
-        await updatePresetOptions();
-        selectOptionIfPresent(document.getElementById('presetSelect'), prefs.preset);
+        await syncRoleOrPresetSelect(prefs.preset);
+        await loadCurrentMapping();
 
         await renderShiftTypesList(getCurrentShiftTypes());
     } catch (e) {
@@ -276,10 +406,15 @@ function setupDropdownListeners() {
         console.log("Dropdown geändert:", e.target.id, e.target.value);
         if (e.target.id === 'professionSelect') {
             await updateAreaOptions();
-            await updatePresetOptions();
-        } else if (e.target.id === 'bereichSelect') {
+            await syncRoleOrPresetSelect();
             await loadCurrentMapping();
-            await updatePresetOptions();
+        } else if (e.target.id === 'bereichSelect') {
+            await syncRoleOrPresetSelect();
+            await loadCurrentMapping();
+        } else if (e.target.id === 'presetSelect') {
+            if (getCurrentArea()?.mappings?.length) {
+                await loadCurrentMapping();
+            }
         }
         saveWorkplacePrefs();
         renderShiftTypesList(getCurrentShiftTypes());
@@ -287,16 +422,8 @@ function setupDropdownListeners() {
     };
 
     professionSelect.onchange = handleChange;
-
     bereichSelect.onchange = handleChange;
-
-    if (presetSelect) {
-        presetSelect.onchange = () => {
-            saveWorkplacePrefs();
-            renderShiftTypesList(getCurrentShiftTypes());
-            refreshPreview();
-        };
-    }
+    if (presetSelect) presetSelect.onchange = handleChange;
 }
 
 function updateGroupOptions() {
@@ -312,52 +439,127 @@ function updateGroupOptions() {
     });
 }
 
+function getCurrentArea() {
+    const professionSelect = document.getElementById('professionSelect');
+    const bereichSelect = document.getElementById('bereichSelect');
+    if (!professionSelect || !bereichSelect || !currentHospitalConfig) return null;
+    const group = currentHospitalConfig.groups.find(g => g.id === professionSelect.value);
+    return group?.areas.find(a => a.id === bereichSelect.value) || null;
+}
+
+function areaRolesCacheKey(area) {
+    const groupId = document.getElementById('professionSelect')?.value || '';
+    return `${groupId}/${area?.id || ''}`;
+}
+
+/** Rollen aus Mapping-Dateien (`role` + dutyCodes), nicht aus config.json. */
+async function loadRolesForArea(area) {
+    if (!area?.mappings?.length) return [];
+    const key = areaRolesCacheKey(area);
+    if (areaRolesCache.has(key)) return areaRolesCache.get(key);
+
+    const roles = [];
+    for (const path of area.mappings) {
+        const mapping = await loadMapping(currentKrankenhaus, path);
+        const id = String(mapping?.role || '').trim();
+        if (!id) {
+            console.error('Mapping ohne role:', path);
+            continue;
+        }
+        const table = resolvePresetTable(mapping);
+        const empty = isDutyTableEmpty(table);
+        roles.push({ id, label: id, mapping: path, empty });
+    }
+    areaRolesCache.set(key, roles);
+    return roles;
+}
+
+function getSelectedRoleFromList(roles) {
+    if (!roles?.length) return null;
+    const roleId = document.getElementById('presetSelect')?.value;
+    return roles.find(r => r.id === roleId) || null;
+}
+
+async function resolveMappingPath() {
+    const area = getCurrentArea();
+    if (!area) return null;
+    if (area.mappings?.length) {
+        const roles = await loadRolesForArea(area);
+        return getSelectedRoleFromList(roles)?.mapping || null;
+    }
+    return area.mapping || null;
+}
+
+function isDutyTableEmpty(table) {
+    if (!table || typeof table !== 'object') return true;
+    return !Object.keys(table).some((k) => !k.startsWith('SPECIAL:'));
+}
+
 async function updateAreaOptions() {
     const professionSelect = document.getElementById('professionSelect');
     const bereichSelect = document.getElementById('bereichSelect');
     if (!professionSelect || !bereichSelect || !currentHospitalConfig) return;
 
-    const groupId = professionSelect.value;
-    const group = currentHospitalConfig.groups.find(g => g.id === groupId);
-    
+    const group = currentHospitalConfig.groups.find(g => g.id === professionSelect.value);
     bereichSelect.innerHTML = '';
-    if (group && group.areas) {
-        group.areas.forEach(area => {
-            const opt = document.createElement('option');
-            opt.value = area.id;
-            opt.textContent = area.label;
-            bereichSelect.appendChild(opt);
-        });
-    }
+    if (!group?.areas) return;
 
-    await loadCurrentMapping();
+    for (const area of group.areas) {
+        const opt = document.createElement('option');
+        opt.value = area.id;
+        if (area.mappings?.length) {
+            opt.textContent = area.label;
+        } else {
+            opt.textContent = area.supported === true
+                ? area.label
+                : `${area.label} (Mapping fehlt)`;
+        }
+        bereichSelect.appendChild(opt);
+    }
+}
+
+/** Rolle-Dropdown aus Mapping-Dateien, sonst Presets nach dem Laden. */
+async function syncRoleOrPresetSelect(preferredId) {
+    const presetSelect = document.getElementById('presetSelect');
+    if (!presetSelect) return;
+
+    presetSelect.innerHTML = '';
+    const area = getCurrentArea();
+
+    if (area?.mappings?.length) {
+        const roles = await loadRolesForArea(area);
+        roles.forEach((role) => {
+            const opt = document.createElement('option');
+            opt.value = role.id;
+            opt.textContent = role.empty ? `${role.label} (leer)` : role.label;
+            presetSelect.appendChild(opt);
+        });
+        if (preferredId) selectOptionIfPresent(presetSelect, preferredId);
+        return;
+    }
 }
 
 async function loadCurrentMapping() {
-    const professionSelect = document.getElementById('professionSelect');
-    const bereichSelect = document.getElementById('bereichSelect');
-    if (!professionSelect || !bereichSelect || !currentHospitalConfig) return;
-
-    const groupId = professionSelect.value;
-    const areaId = bereichSelect.value;
-    const group = currentHospitalConfig.groups.find(g => g.id === groupId);
-    const area = group?.areas.find(a => a.id === areaId);
-
-    if (area && area.mapping) {
+    const path = await resolveMappingPath();
+    if (!path) {
+        currentMapping = null;
+    } else {
         try {
-            const baseMapping = await loadMapping(currentKrankenhaus, area.mapping);
+            const baseMapping = await loadMapping(currentKrankenhaus, path);
             const userPresets = getUserMapping();
-            
             currentMapping = {
                 ...baseMapping,
-                presets: userPresets || baseMapping.presets
+                presets: userPresets || baseMapping.presets,
             };
         } catch (e) {
             console.error('Fehler beim Laden des Mappings:', e);
             currentMapping = null;
         }
-    } else {
-        currentMapping = null;
+    }
+
+    const area = getCurrentArea();
+    if (!area?.mappings?.length) {
+        await fillPresetsFromCurrentMapping();
     }
 
     if (payrollUiApi?.refreshTariffNotice) {
@@ -370,41 +572,71 @@ async function loadCurrentMapping() {
     }
 }
 
-async function updatePresetOptions() {
+async function fillPresetsFromCurrentMapping() {
     const presetSelect = document.getElementById('presetSelect');
     if (!presetSelect) return;
-
     presetSelect.innerHTML = '';
-    if (!currentMapping || !currentMapping.presets) return;
+    if (!currentMapping?.presets) return;
 
     const presets = Object.keys(currentMapping.presets);
-    presets.forEach(preset => {
+    presets.forEach((preset) => {
         const opt = document.createElement('option');
         opt.value = preset;
-        opt.textContent = preset.charAt(0).toUpperCase() + preset.slice(1);
+        const table = currentMapping.presets[preset];
+        const label = preset.charAt(0).toUpperCase() + preset.slice(1);
+        opt.textContent = isDutyTableEmpty(table) ? `${label} (leer)` : label;
         presetSelect.appendChild(opt);
     });
-
     if (presets.includes('standard')) {
         presetSelect.value = 'standard';
-    } else if (presets.length > 0) {
+    } else if (presets.length) {
         presetSelect.value = presets[0];
     }
 }
 
 function getCurrentShiftTypes() {
+    if (!currentMapping) return {};
+
+    const area = getCurrentArea();
     const presetSelect = document.getElementById('presetSelect');
-    if (!presetSelect || !currentMapping) return {};
+    const preset = area?.mappings?.length
+        ? Object.keys(currentMapping.presets || {})[0]
+        : presetSelect?.value;
 
-    const preset = presetSelect.value;
     const types = { ...resolvePresetTable(currentMapping, preset) };
+    if (isDutyTableEmpty(types)) return {};
 
-    if (!Object.keys(types).some(k => k.startsWith('SPECIAL:'))) {
+    if (!Object.keys(types).some((k) => k.startsWith('SPECIAL:'))) {
         types['SPECIAL:URLAUB'] = { code: 'U', isValidated: true };
         types['SPECIAL:KRANK'] = { code: 'K', isValidated: true };
     }
-
     return types;
+}
+
+async function renderMappingStatusNotice(parent, shiftTypes) {
+    const area = getCurrentArea();
+    let message = null;
+
+    if (area?.mappings?.length) {
+        const roles = await loadRolesForArea(area);
+        const role = getSelectedRoleFromList(roles);
+        if (!role) {
+            message = 'Keine Rolle gewählt.';
+        } else if (role.empty || isDutyTableEmpty(shiftTypes)) {
+            message = `Rolle ${role.label}: Mapping leer.`;
+        }
+    } else if (area && area.supported !== true) {
+        message = `Bereich ${area.label}: Mapping fehlt bzw. noch nicht validiert.`;
+    } else if (!currentMapping || isDutyTableEmpty(shiftTypes)) {
+        message = 'Kein Schichttyp-Mapping für diese Auswahl.';
+    }
+
+    if (!message) return;
+    const notice = document.createElement('div');
+    notice.setAttribute('role', 'status');
+    notice.className = 'mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900';
+    notice.textContent = message;
+    parent.prepend(notice);
 }
 
 async function renderShiftTypesList(currentShiftTypes) {
@@ -413,6 +645,7 @@ async function renderShiftTypesList(currentShiftTypes) {
     if (!previewDiv) return;
 
     previewDiv.innerHTML = '';
+    await renderMappingStatusNotice(previewDiv, currentShiftTypes);
 
     const colors = await getShiftColors();
     const editBtn = document.getElementById('editShiftTypesBtn');
@@ -895,6 +1128,8 @@ initPDFLoad({
         const entryArrays = [];
         const failed = [];
         const rawParts = [];
+        const allPeople = [];
+        let personPickRequired = false;
 
         for (let idx = 0; idx < items.length; idx++) {
             const { arrayBuffer, file } = items[idx];
@@ -915,7 +1150,16 @@ initPDFLoad({
                     currentParser,
                     parseOpts()
                 );
+                if (Array.isArray(parsed.people)) {
+                    allPeople.push(...parsed.people);
+                }
+                if (parsed.personPickRequired) personPickRequired = true;
+
                 if (!parsed.entries || parsed.entries.length === 0) {
+                    if (parsed.personPickRequired && (parsed.people || []).length > 1) {
+                        // Namenswahl nötig — kein harter Fehler
+                        continue;
+                    }
                     failed.push(
                         parsed.hint
                             ? `${file.name}: ${parsed.hint}`
@@ -931,7 +1175,31 @@ initPDFLoad({
             }
         }
 
+        lastRawText = rawParts.join('');
+        const rawTextOutput = document.getElementById('rawTextOutput');
+        if (rawTextOutput) rawTextOutput.textContent = lastRawText;
+        const debugArea = document.getElementById('debugArea');
+        if (debugArea) debugArea.style.display = 'block';
+
+        const uniquePeople = [...new Set(allPeople.map((n) => String(n || '').trim()).filter(Boolean))];
+        updateDetectedPeopleUI(uniquePeople, {
+            requirePick: personPickRequired && !getPersonFilter(),
+            openModal: personPickRequired && !getPersonFilter() && uniquePeople.length > 1,
+        });
+
         if (entryArrays.length === 0) {
+            if (personPickRequired && uniquePeople.length > 1) {
+                writeJsonStore('parsedEntries', []);
+                await renderPreview([], currentMapping, preset);
+                if (previewContent) {
+                    previewContent.innerHTML = '';
+                    const info = document.createElement('div');
+                    info.className = 'text-amber-800 text-sm';
+                    info.textContent = `${uniquePeople.length} Personen erkannt — bitte im Dialog deinen Namen wählen.`;
+                    previewContent.appendChild(info);
+                }
+                return;
+            }
             const msg = failed.length
                 ? `Keine verwertbaren PDFs.\n${failed.join('\n')}`
                 : 'Keine Einträge gefunden.';
@@ -947,11 +1215,6 @@ initPDFLoad({
         }
 
         const merged = mergeParsedEntryArrays(entryArrays);
-        lastRawText = rawParts.join('');
-        const rawTextOutput = document.getElementById('rawTextOutput');
-        if (rawTextOutput) rawTextOutput.textContent = lastRawText;
-        const debugArea = document.getElementById('debugArea');
-        if (debugArea) debugArea.style.display = 'block';
 
         writeJsonStore('parsedEntries', merged);
         saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
@@ -1085,10 +1348,37 @@ window.addEventListener('DOMContentLoaded', () => {
         personFilterInput.value = localStorage.getItem(PERSON_FILTER_KEY) || '';
         personFilterInput.addEventListener('change', () => {
             localStorage.setItem(PERSON_FILTER_KEY, personFilterInput.value.trim());
+            const pick = document.getElementById('personPickSelect');
+            if (pick && personFilterInput.value.trim()) {
+                const val = personFilterInput.value.trim();
+                const match = Array.from(pick.options).find(
+                    (o) => o.value && (o.value === val || o.value.toLowerCase().includes(val.toLowerCase()))
+                );
+                if (match) pick.value = match.value;
+            }
             refreshPreview();
         });
         personFilterInput.addEventListener('blur', () => {
             localStorage.setItem(PERSON_FILTER_KEY, personFilterInput.value.trim());
+        });
+    }
+
+    const personPickSelect = document.getElementById('personPickSelect');
+    if (personPickSelect) {
+        personPickSelect.addEventListener('change', () => {
+            if (!personPickSelect.value) return;
+            applyPersonPick(personPickSelect.value);
+        });
+    }
+
+    const personPickModal = document.getElementById('personPickModal');
+    const closePersonPickModalBtn = document.getElementById('closePersonPickModal');
+    if (closePersonPickModalBtn) {
+        closePersonPickModalBtn.addEventListener('click', () => closePersonPickModal());
+    }
+    if (personPickModal) {
+        personPickModal.addEventListener('click', (e) => {
+            if (e.target === personPickModal) closePersonPickModal();
         });
     }
 
@@ -1124,6 +1414,7 @@ window.addEventListener('DOMContentLoaded', () => {
             if (debugArea) debugArea.style.display = 'none';
             const personFilter = document.getElementById('personFilterInput');
             if (personFilter) personFilter.value = '';
+            updateDetectedPeopleUI([]);
             renderMonthSummariesFromStorage();
             alert('Lokale sensiblen Daten gelöscht.');
         });

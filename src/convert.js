@@ -61,23 +61,40 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
         let entries = [...(grid.mainEntries || [])].sort(
             (a, b) => new Date(a.date) - new Date(b.date)
         );
+        const people = Array.isArray(grid.people) ? grid.people : [];
         let hint = null;
-        if (!entries.length && personFilter) {
+
+        if (grid.personPickRequired && people.length > 1) {
+                hint =
+                    `Codeplan mit ${people.length} Personen erkannt — bitte deinen Namen in der Liste wählen.`;
+        } else if (!entries.length && personFilter) {
             grid = parsePdfCodeGrid(pdfText, pdfConfig, {
                 mapping,
                 preset: preset || 'default',
                 personFilter: null,
             });
+            const allPeople = Array.isArray(grid.people) ? grid.people : [];
             const all = [...(grid.mainEntries || [])];
-            if (all.length) {
+            if (allPeople.length > 1 || all.length) {
                 hint =
-                    `Codeplan: für „${personFilter}“ keine Schichten mit diesem Mapping. ` +
-                    `Namen prüfen (Nachname, Vorname) oder Filter leeren — oder ${deptHint} wählen.`;
+                    `Codeplan: für „${personFilter}“ keine Treffer. ` +
+                    `Namen aus der Liste wählen oder Schreibweise prüfen — oder ${deptHint}.`;
             } else {
                 hint =
                     `Codeplan erkannt, aber mit aktuellem Mapping keine auswertbaren Kürzel. Bitte ${deptHint} wählen.`;
             }
             entries = [];
+            return {
+                entries,
+                year: grid.year || null,
+                month: grid.month || null,
+                summary: null,
+                summaries: [],
+                source: 'code-grid',
+                hint,
+                people: allPeople.length ? allPeople : people,
+                personPickRequired: allPeople.length > 1,
+            };
         } else if (!entries.length) {
             hint =
                 `Codeplan erkannt, aber mit aktuellem Mapping keine Schichten. Bitte ${deptHint} wählen.`;
@@ -90,6 +107,8 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
             summaries: [],
             source: 'code-grid',
             hint,
+            people,
+            personPickRequired: !!grid.personPickRequired,
         };
     }
 
@@ -105,6 +124,8 @@ export function parseTimeSheet(pdfText, profession, bereich, preset, hospitalMap
                 `Abteilungs-Codeplan erkannt (Mandant / Namenszeilen), aber das aktuelle Mapping passt nicht ` +
                 `(Dienstkürzel werden nicht erkannt). Bitte ${deptHint} wählen` +
                 (personFilter ? ` und „Mein Name“ prüfen („${personFilter}“).` : '.'),
+            people: [],
+            personPickRequired: false,
         };
     }
 

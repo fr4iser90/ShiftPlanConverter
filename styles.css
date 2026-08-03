@@ -1,3 +1,25 @@
+/* Person-Pick-Modal: feste Höhe + Scroll (Tailwind 2 ohne arbitrary max-h) */
+#personPickModalPanel {
+  max-width: 32rem;
+  max-height: min(85vh, 640px);
+  width: 100%;
+}
+#personPickList {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(55vh, 420px);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+#personPickList button {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+#personPickList button:last-child {
+  margin-bottom: 0;
+}
+
 /* Globaler Fix für Mobile Click Delay */
 button, 
 select, 

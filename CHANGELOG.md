@@ -10,6 +10,8 @@ Version in [`src/version.json`](./src/version.json) (auch Footer der Web-App).
 ### Geändert
 - Schichten / Monatsübersicht: `sessionStorage` statt dauerhaftem localStorage; Legacy-PDF-DataURL-Cache entfernt
 - Footer: „Lokale Daten löschen“; Datenschutz: Web vs. Mobile (kein AES im Browser)
+- Pflege/Ärzte: ein Bereich **OP**, Rollen darunter (ATA / OTA / Anästhesie), je Rolle eine Mapping-Datei; leere/unvalidierte Rollen markiert
+- Mehrpersonen-Codeplan: erkannte Namen nach dem Parse zur Auswahl anbieten (kein Mischen ohne Namenswahl)
 
 ## 0.2.0 — 2026-08-02
 

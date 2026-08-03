@@ -625,13 +625,18 @@ function parsePdfCodeGrid(text, config, opts = {}) {
   );
   let filtered = people;
   const filter = String(opts.personFilter || "").trim();
+  let personPickRequired = false;
   if (filter) {
     const key = filter.toLowerCase();
     const hit = people.filter((p) => {
       const n = p.name.toLowerCase();
       return n.includes(key) || key.includes(n.split(",")[0] || "");
     });
-    if (hit.length) filtered = hit;
+    filtered = hit;
+  } else if (people.length > 1) {
+    // Mehrpersonen-Plan: ohne Namenswahl keine gemischten Kalendereinträge
+    filtered = [];
+    personPickRequired = true;
   }
   const entries = [];
   for (const p of filtered) {
@@ -640,6 +645,8 @@ function parsePdfCodeGrid(text, config, opts = {}) {
   const result = finishParseResult(entries);
   result.year = ym.year;
   result.month = ym.month;
+  result.people = people.map((p) => p.name).filter(Boolean);
+  result.personPickRequired = personPickRequired;
   return result;
 }
 export {
