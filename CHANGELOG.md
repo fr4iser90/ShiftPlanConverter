@@ -12,6 +12,8 @@ Version in [`src/version.json`](./src/version.json) (auch Footer der Web-App).
 - Footer: „Lokale Daten löschen“; Datenschutz: Web vs. Mobile (kein AES im Browser)
 - Pflege/Ärzte: ein Bereich **OP**, Rollen darunter (ATA / OTA / Anästhesie), je Rolle eine Mapping-Datei; leere/unvalidierte Rollen markiert
 - Mehrpersonen-Codeplan: erkannte Namen nach dem Parse zur Auswahl anbieten (kein Mischen ohne Namenswahl)
+- iOS-Upload: doppelten `pdfInput.click()` entfernt; Dateiname nach Auswahl anzeigen
+- Cache: Nginx max. 1 Tag für JS/CSS; HTML/`sw.js` no-cache; Service Worker network-first (`spc-shell-v3`)
 
 ## 0.2.0 — 2026-08-02
 

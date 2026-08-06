@@ -26,6 +26,21 @@ function clearLegacyPdfCache() {
     }
 }
 
+function showSelectedFileNames(files) {
+    const el = document.getElementById('pdfSelectedFiles');
+    if (!el) return;
+    const names = Array.from(files || []).map((f) => f.name).filter(Boolean);
+    if (!names.length) {
+        el.textContent = '';
+        el.style.display = 'none';
+        return;
+    }
+    el.style.display = 'block';
+    el.textContent = names.length === 1
+        ? `Ausgewählt: ${names[0]}`
+        : `Ausgewählt (${names.length}): ${names.join(', ')}`;
+}
+
 export function initPDFLoad({ onPdfBatchLoaded }) {
     const dropzone = document.getElementById('dropzone');
     const pdfInput = document.getElementById('pdfInput');
@@ -36,6 +51,7 @@ export function initPDFLoad({ onPdfBatchLoaded }) {
 
     async function handleFileList(fileList) {
         const pdfFiles = Array.from(fileList).filter(isPdfFile);
+        showSelectedFileNames(pdfFiles);
         if (!pdfFiles.length) return;
 
         // PDFs stay in memory (ArrayBuffer) only — never persist to localStorage.
@@ -55,7 +71,8 @@ export function initPDFLoad({ onPdfBatchLoaded }) {
         }
     }
 
-    dropzone.addEventListener('click', () => pdfInput.click());
+    // Kein dropzone→pdfInput.click(): Input liegt bereits full-bleed über der Zone
+    // (doppelter programmatischer click bricht den File-Picker auf iOS).
     pdfInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length) {
             handleFileList(e.target.files);
