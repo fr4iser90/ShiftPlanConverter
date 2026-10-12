@@ -1040,19 +1040,61 @@ async function extractTextFromPdfBuffer(arrayBuffer) {
     return pdfText;
 }
 
+function showExportNeedConvertHint() {
+    const hint = document.getElementById('exportNeedConvertHint');
+    if (!hint) return;
+    hint.classList.remove('hidden');
+    clearTimeout(showExportNeedConvertHint._timer);
+    showExportNeedConvertHint._timer = setTimeout(() => {
+        hint.classList.add('hidden');
+    }, 4500);
+}
+
+function initExportDisabledHints() {
+    document.querySelectorAll('[data-export-wrap]').forEach((wrap) => {
+        const btnId = wrap.getAttribute('data-export-wrap');
+        const btn = document.getElementById(btnId);
+        if (!btn) return;
+
+        const onActivate = (e) => {
+            if (!btn.disabled) return;
+            e.preventDefault();
+            e.stopPropagation();
+            showExportNeedConvertHint();
+        };
+
+        wrap.addEventListener('click', onActivate);
+        wrap.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') onActivate(e);
+        });
+    });
+}
+
 function wireExportButtons() {
     ['icsExportBtn', 'downloadBtn', 'syncBtn'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) {
             btn.disabled = false;
             btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.removeAttribute('aria-describedby');
+            const wrap = document.querySelector(`[data-export-wrap="${id}"]`);
+            if (wrap) {
+                wrap.removeAttribute('title');
+                wrap.classList.remove('export-btn-wrap--locked');
+            }
+            const hint = document.getElementById('exportNeedConvertHint');
+            if (hint) hint.classList.add('hidden');
+
             btn.onclick = (e) => {
                 const entries = readJsonStore('parsedEntries', []);
                 if (!entries || entries.length === 0) {
                     e.preventDefault();
-                    alert('Bitte zuerst einen Dienstplan konvertieren!');
+                    showExportNeedConvertHint();
                 } else if (id === 'icsExportBtn') {
-                    exportToICS();
+                    exportToICS().catch((err) => {
+                        console.error('ICS-Export fehlgeschlagen', err);
+                        alert('Kalender-Datei konnte nicht erstellt werden. Bitte Seite neu laden und erneut versuchen.');
+                    });
                 } else if (id === 'downloadBtn') {
                     const csv = convertParsedEntriesToCSV(entries);
                     const blob = new Blob([csv], { type: 'text/csv' });
@@ -1236,6 +1278,8 @@ initPDFLoad({
 });
 
 window.addEventListener('DOMContentLoaded', () => {
+    initExportDisabledHints();
+
     // Debug-Buttons initialisieren
     const anonymizeBtn = document.getElementById('anonymizeBtn');
     if (anonymizeBtn) {

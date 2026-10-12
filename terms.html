@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutzungsbedingungen – ShiftPlan Converter</title>
+    <meta name="description" content="Nutzungsbedingungen für ShiftPlan Converter (Web und Android)">
+    <link rel="icon" href="assets/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0f766e">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="mb-6 flex flex-wrap gap-4 justify-between items-center">
+            <a href="index.html" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span>&larr;</span> Zurück zur Hauptseite
+            </a>
+            <a href="privacy.html" class="text-sm text-blue-500 hover:underline">Datenschutz</a>
+        </div>
+        <div class="flex justify-between items-center mb-6 gap-4 flex-wrap">
+            <h1 class="text-3xl font-bold">Nutzungsbedingungen</h1>
+            <div class="flex items-center gap-2">
+                <button type="button" id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus">☀️</button>
+                <button type="button" id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button type="button" id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+            </div>
+        </div>
+
+        <p class="text-sm text-gray-500 mb-6">
+            Angebot: ShiftPlan Converter (Web unter
+            <a href="https://shift.fr4iser.com" class="text-blue-500 hover:underline">shift.fr4iser.com</a>
+            und optional Android-App <code>com.fr4iser.shiftplan</code>)<br>
+            Anbieter: Patrick Böhme (Fr4iser) ·
+            <a href="mailto:support@fr4iser.com" class="text-blue-500 hover:underline">support@fr4iser.com</a><br>
+            Stand: 2026-09-02
+        </p>
+
+        <section class="mb-8 space-y-4 text-gray-700 text-sm">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">1. Geltungsbereich</h2>
+                <p>
+                    Diese Nutzungsbedingungen gelten für die Nutzung der Web-Anwendung und der optionalen
+                    Android-App „ShiftPlan Converter“ (nachfolgend „das Tool“). Mit der Nutzung erkennst du
+                    diese Bedingungen an. Es handelt sich um ein <strong>privates, experimentelles Projekt</strong>
+                    ohne Verbindung zum Krankenhaus oder zu LOGA3/Arbeitgebern.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">2. Leistungsbeschreibung</h2>
+                <p class="mb-2">Das Tool hilft dir, Dienstplan-Daten (z. B. PDF) lokal zu lesen und optional:</p>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>als Kalender-Datei (<code>.ics</code>) oder CSV zu exportieren,</li>
+                    <li>mit deinem Google-Kalender zu synchronisieren (nur nach ausdrücklicher Anmeldung bei Google),</li>
+                    <li>in der Android-App zusätzliche Funktionen (z. B. LOGA3-Abruf, OCR, Abrechnungsprüfung) zu nutzen.</li>
+                </ul>
+                <p class="mt-2">
+                    Funktionen können sich ändern oder zeitweise ausfallen. Es besteht <strong>kein Anspruch</strong>
+                    auf Verfügbarkeit, Vollständigkeit oder dauerhaften Support.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">3. Keine offizielle Auskunft</h2>
+                <p>
+                    Parser, Zeiten, Kürzel, Kalender-Einträge und optionale Abrechnungsprüfungen ersetzen
+                    <strong>keine</strong> offizielle LOGA3-, Personal- oder Gehaltsauskunft.
+                    Du bleibst selbst dafür verantwortlich, Schichten, Zeiten und Abrechnung zu prüfen,
+                    bevor du dich darauf verlässt.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">4. Nutzung auf eigene Verantwortung</h2>
+                <ul class="list-disc pl-5 space-y-1">
+                    <li>Du nutzt das Tool nur mit Daten, zu deren Verarbeitung du berechtigt bist (eigene Dienstpläne / eigene Zugänge).</li>
+                    <li>Du hältst dich an geltendes Recht und die Vorgaben deines Arbeitgebers (z. B. IT-/Datenschutzregeln).</li>
+                    <li>Missbrauch (z. B. unbefugter Zugriff auf fremde Daten) ist untersagt.</li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">5. Datenverarbeitung</h2>
+                <p>
+                    Details stehen in der
+                    <a href="privacy.html" class="text-blue-500 hover:underline">Datenschutzerklärung</a>.
+                    Kurz: Verarbeitung überwiegend <strong>lokal</strong> auf deinem Gerät bzw. im Browser;
+                    optionaler Google-Kalender-Sync nur mit deiner Zustimmung (Gerät ↔ Google).
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">6. Google-Konto / Kalender</h2>
+                <p>
+                    Wenn du „Mit Google verbinden“ nutzt, greift zusätzlich Googles Nutzungsbedingungen und
+                    Datenschutz. Du kannst den Zugriff jederzeit in deinem Google-Konto widerrufen.
+                    Der Anbieter dieses Tools speichert keine Google-Passwörter und keine dauerhaften Access-Tokens
+                    auf eigenen Servern.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">7. Haftung</h2>
+                <p>
+                    Das Tool wird „wie besehen“ bereitgestellt. Soweit gesetzlich zulässig, hafte ich nicht für
+                    Schäden aus fehlerhaften Importen, falschen Kalendereinträgen, ausgefallenen Syncs,
+                    Datenverlust oder betrieblichen Folgen (z. B. Dienstplan-Irrtümer).
+                    Unberührt bleiben Ansprüche bei Vorsatz, grober Fahrlässigkeit oder Verletzung von Leben,
+                    Körper oder Gesundheit sowie zwingende gesetzliche Haftung.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">8. Änderungen</h2>
+                <p>
+                    Diese Bedingungen können angepasst werden. Es gilt die jeweils auf dieser Seite veröffentlichte
+                    Fassung (Stand-Datum oben). Wesentliche Änderungen werden nach Möglichkeit auf der Website
+                    kenntlich gemacht.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">9. Kontakt</h2>
+                <p>
+                    Fragen:
+                    <a href="mailto:support@fr4iser.com" class="text-blue-500 hover:underline">support@fr4iser.com</a>
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            function setTheme(theme) {
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            setTheme(localStorage.getItem('theme') || 'theme-light');
+            document.getElementById('themeLightBtn')?.addEventListener('click', () => setTheme('theme-light'));
+            document.getElementById('themeDarkBtn')?.addEventListener('click', () => setTheme('theme-dark'));
+            document.getElementById('themeSepiaBtn')?.addEventListener('click', () => setTheme('theme-sepia'));
+        });
+    </script>
+</body>
+</html>

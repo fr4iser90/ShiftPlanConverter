@@ -20,6 +20,25 @@
   margin-bottom: 0;
 }
 
+/* App-Landing: Portrait-Demo (z. B. 1072×2400) nicht höher als Viewport */
+.app-demo-frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+.app-demo-video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: min(70vh, 640px);
+  margin: 0 auto;
+}
+
 /* Globaler Fix für Mobile Click Delay */
 button, 
 select, 
@@ -346,10 +365,38 @@ input:focus, select:focus, textarea:focus {
 }
 
 #downloadBtn:disabled,
-#convertBtn:disabled {
-  opacity: 0.5 !important;
-  cursor: not-allowed;
+#convertBtn:disabled,
+#icsExportBtn:disabled,
+#payrollCheckBtn:disabled {
+  background: #9ca3af !important;
+  color: #f3f4f6 !important;
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
   transform: none !important;
+  box-shadow: none !important;
+  filter: grayscale(0.4);
+}
+
+.export-btn-wrap {
+  position: relative;
+}
+
+.export-btn-wrap[title] {
+  cursor: not-allowed;
+}
+
+.export-need-convert-hint.hidden {
+  display: none;
+}
+
+.export-need-convert-hint:not(.hidden) {
+  display: block;
+  animation: export-hint-in 0.2s ease-out;
+}
+
+@keyframes export-hint-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Kalender-Integration Buttons */

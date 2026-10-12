@@ -4,7 +4,8 @@
  *
  * Default-Client-ID aus src/config.json (öffentlich, kein Secret).
  * Self-Hosting: googleClientId in config.json anpassen.
- * Access-Token wird NICHT gespeichert – nach Reload stilles Re-Auth (prompt: '').
+ * Access-Token wird NICHT gespeichert.
+ * Auto-Reconnect nur mit Opt-in (localStorage), sonst erst nach Button-Klick.
  */
 
 import { buildEventDescription } from './eventDescription.js';
@@ -13,6 +14,7 @@ import { isRichEventDetailsEnabled } from './monthSummary.js';
 const STORAGE = {
     clientId: 'googleClientId',
     calendarId: 'googleCalendarId',
+    autoReconnect: 'googleAutoReconnect',
 };
 
 const CALENDAR_SCOPES =
@@ -25,11 +27,21 @@ let defaultClientId = '';
 /** @type {{ resolve: (v: unknown) => void, reject: (e: unknown) => void } | null} */
 let pendingAuth = null;
 
+function isAutoReconnectEnabled() {
+    return localStorage.getItem(STORAGE.autoReconnect) === '1';
+}
+
+function setAutoReconnectEnabled(enabled) {
+    if (enabled) localStorage.setItem(STORAGE.autoReconnect, '1');
+    else localStorage.removeItem(STORAGE.autoReconnect);
+}
+
 export function initGoogleCalendar() {
     const connectBtn = document.getElementById('connectGoogleBtn');
     const syncBtn = document.getElementById('syncBtn');
     const calendarSelect = document.getElementById('calendarSelect');
     const createCalendarBtn = document.getElementById('createCalendarBtn');
+    const autoReconnectChk = document.getElementById('googleAutoReconnectChk');
 
     if (!connectBtn || !syncBtn) return;
 
@@ -38,9 +50,16 @@ export function initGoogleCalendar() {
     // Alte UI-Override-ID entfernen (nur noch config.json)
     localStorage.removeItem(STORAGE.clientId);
 
+    if (autoReconnectChk) {
+        autoReconnectChk.checked = isAutoReconnectEnabled();
+        autoReconnectChk.addEventListener('change', () => {
+            setAutoReconnectEnabled(autoReconnectChk.checked);
+        });
+    }
+
     loadDefaultClientId().then((id) => {
         defaultClientId = id;
-        if (defaultClientId) {
+        if (defaultClientId && isAutoReconnectEnabled()) {
             attemptSilentReconnect(defaultClientId, connectBtn);
         }
     });

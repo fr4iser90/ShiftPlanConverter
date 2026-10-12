@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android-App – ShiftPlan Converter</title>
+    <meta name="description" content="Android-App: Dienstplan lokal konvertieren, optional LOGA3, OCR und Abrechnungsprüfung. Geschlossener Play-Test.">
+    <link rel="icon" href="assets/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+    <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+    <meta name="theme-color" content="#0f766e">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" integrity="sha384-HtMZLkYo+pR5/u7zCzXxMJP6QoNnQJt1qkHM0EaOPvGDIzaVZbmYr/TlvUZ/sKAg" crossorigin="anonymous">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-2xl">
+        <div class="mb-6">
+            <a href="index.html" class="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors">
+                <span>&larr;</span> Zurück zur Web-Version
+            </a>
+        </div>
+
+        <div class="flex justify-between items-start mb-4 gap-4 flex-wrap">
+            <div>
+                <h1 class="text-3xl font-bold">ShiftPlan Converter</h1>
+                <p class="text-sm text-gray-500 mt-1">Android-App · <code class="text-xs">com.fr4iser.shiftplan</code></p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" id="themeLightBtn" class="bg-gray-200 text-gray-700 px-2 py-1 rounded hover:bg-gray-300 text-lg" title="Heller Modus">☀️</button>
+                <button type="button" id="themeDarkBtn" class="bg-gray-800 text-gray-100 px-2 py-1 rounded hover:bg-gray-700 text-lg" title="Dunkler Modus">🌙</button>
+                <button type="button" id="themeSepiaBtn" class="bg-yellow-200 text-yellow-900 px-2 py-1 rounded hover:bg-yellow-300 text-lg" title="Sepia Modus">🟤</button>
+            </div>
+        </div>
+
+        <p class="text-gray-700 mb-6">
+            Privates, experimentelles Tool: Dienstplan auf dem Gerät lesen, Schichten prüfen und in den Kalender bringen —
+            optional mit LOGA3-Abruf, Foto/OCR und Abrechnungsprüfung.
+            Aktuell vor allem für Kolleg:innen am <strong>Krankenhaus (St. Elisabeth Leipzig)</strong>;
+            langfristig ein generischer Dienstplan-Konverter mit Packs für unterschiedliche Arbeitgeber.
+        </p>
+
+        <figure class="mb-8 max-w-full">
+            <div class="app-demo-frame rounded-xl border border-gray-200 bg-black shadow-sm">
+                <video
+                    class="app-demo-video"
+                    controls
+                    playsinline
+                    preload="metadata"
+                    src="assets/demo.webm"
+                >
+                    Dein Browser unterstützt kein Video. Demo:
+                    <a href="assets/demo.webm" class="text-blue-600 underline">assets/demo.webm</a>
+                </video>
+            </div>
+            <figcaption class="mt-2 text-xs text-gray-500 text-center">
+                Kurz-Demo der Android-App (experimentell) · Hochformat, Höhe begrenzt
+            </figcaption>
+        </figure>
+
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 mb-8">
+            <p class="font-semibold">Kein öffentlicher Play-Store-Download</p>
+            <p class="mt-1">
+                Die App ist in der <strong>geschlossenen Testphase</strong>. Zugang nur nach Einladung.
+                iOS wird bewusst nicht angeboten (zu kostenintensiv) — nutze die
+                <a href="index.html" class="underline font-medium">Web-Version</a> + Kalender-Datei (.ics).
+            </p>
+        </div>
+
+        <!-- CTA -->
+        <section class="mb-10 rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <h2 class="text-lg font-semibold text-gray-900 mb-2">Interesse an der Android-App?</h2>
+            <p class="text-sm text-gray-700 mb-3">
+                Im Haus: einfach <strong>Patrick Böhme (Anästhesie)</strong> ansprechen.
+                Per Mail:
+                <a href="mailto:support@fr4iser.com?subject=ShiftPlan%20App%20Zugang&body=Hallo%2C%0A%0AIch%20interessiere%20mich%20f%C3%BCr%20die%20Android-App.%0A%0AGoogle-Konto-E-Mail%20(Play%20Store)%3A%20%0ABerufsgruppe%20%2F%20Station%3A%20%0A%0ADanke!"
+                   class="text-blue-700 font-medium hover:underline">support@fr4iser.com</a>.
+            </p>
+            <p class="text-sm text-gray-700 mb-3">
+                Für den Play-Test brauche ich die <strong>E-Mail deines Google-Kontos</strong>
+                (die, mit der du den Play Store nutzt) — sonst kann ich dich nicht freischalten.
+                Kurz Berufsgruppe / Station mit angeben.
+            </p>
+            <p class="text-xs text-gray-500">
+                Voraussetzung: Android-Smartphone. Kein öffentlicher Download — erst Tester-Einladung, dann Installation über den Play Store.
+            </p>
+        </section>
+
+        <section class="mb-8 space-y-8 text-gray-700 text-sm">
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Was macht die App?</h2>
+                <ol class="list-decimal ml-5 space-y-1">
+                    <li>Dienstplan einlesen (LOGA3, PDF-Datei oder Foto)</li>
+                    <li>Schichten lokal speichern und im Kalender anzeigen</li>
+                    <li>Optional: als <strong>.ics</strong> teilen oder mit <strong>Google Kalender</strong> synchronisieren</li>
+                    <li>Optional: <strong>Verdienstnachweis</strong> laden und mit den Diensten vergleichen (Tab Prüfung)</li>
+                </ol>
+                <p class="mt-2 text-gray-500 text-xs">
+                    Kein Fr4iser-Server für Login oder Plan. Alles läuft auf dem Gerät.
+                    Kein offizielles Krankenhaus-Tool — du prüfst Zeiten und Abrechnung selbst.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Web vs. Android</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-200 text-gray-500">
+                                <th class="py-2 pr-3 font-medium"> </th>
+                                <th class="py-2 pr-3 font-medium">Web (diese Seite)</th>
+                                <th class="py-2 font-medium">Android-App</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 pr-3 font-medium text-gray-900">PDF → Kalender / .ics</td>
+                                <td class="py-2 pr-3">ja</td>
+                                <td class="py-2">ja</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 pr-3 font-medium text-gray-900">Google-Sync</td>
+                                <td class="py-2 pr-3">optional</td>
+                                <td class="py-2">optional</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 pr-3 font-medium text-gray-900">LOGA3-Automation</td>
+                                <td class="py-2 pr-3">nein (nur Desktop-Tool + PDF hierher)</td>
+                                <td class="py-2">ja (WebView auf dem Phone)</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 pr-3 font-medium text-gray-900">Foto / OCR</td>
+                                <td class="py-2 pr-3">nein</td>
+                                <td class="py-2">ja</td>
+                            </tr>
+                            <tr class="border-b border-gray-100">
+                                <td class="py-2 pr-3 font-medium text-gray-900">Abrechnungsprüfung</td>
+                                <td class="py-2 pr-3">teilweise (Web)</td>
+                                <td class="py-2">ja (wenn Pack Payroll unterstützt)</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2 pr-3 font-medium text-gray-900">iPhone</td>
+                                <td class="py-2 pr-3">ja (Browser + .ics)</td>
+                                <td class="py-2">keine native App</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Wie funktioniert die Konvertierung?</h2>
+                <p class="mb-2">
+                    Herzstück ist ein <strong>Arbeitgeber-Pack</strong>: Mapping von Schichtkürzeln, Zeiten, Farben und Parsern.
+                    Ohne passendes Pack sind Codes und Zeiten oft falsch.
+                </p>
+                <ol class="list-decimal ml-5 space-y-1">
+                    <li>Quelle wählen (Datei, Foto oder LOGA3)</li>
+                    <li>PDF / Bild wird <strong>auf dem Gerät</strong> gelesen</li>
+                    <li>Pack-Mapping ordnet Zeiten und Kürzel den Schichten zu</li>
+                    <li>Vorschau im Kalender → prüfen → Export (ICS / Google)</li>
+                </ol>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">LOGA3-Automation (Krankenhaus)</h2>
+                <p class="mb-2">
+                    Die App öffnet dein LOGA3-Portal in einer eingebetteten WebView, meldet sich mit den
+                    <strong>lokal gespeicherten</strong> Zugangsdaten an und holt das Zeitprotokoll-PDF
+                    (ähnlich der Desktop-Automation, nur auf dem Phone).
+                </p>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li>Login nur im Secure Store auf dem Gerät</li>
+                    <li>Verbindung nur zu deiner Arbeitgeber-/Tenant-URL (HTTPS)</li>
+                    <li>Kein Upload zu fr4iser.com</li>
+                    <li>Abruf nur bei offener App — kein zuverlässiger stiller Nachtabruf</li>
+                </ul>
+                <p class="mt-2 text-xs text-gray-500">
+                    Desktop-Alternative:
+                    <a href="loga3.html" class="text-blue-600 hover:underline">LOGA3 Desktop-App</a>
+                    → PDF speichern → hier in der
+                    <a href="index.html" class="text-blue-600 hover:underline">Web-Version</a> öffnen.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Wohin wandern die Daten?</h2>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li><strong>Gerät:</strong> Schichten, PDFs, Verdienstnachweise (lokal, teilweise verschlüsselt)</li>
+                    <li><strong>LOGA3:</strong> nur zum Arbeitgeber-Portal, das du einstellst</li>
+                    <li><strong>Google:</strong> nur wenn du Sync aktivierst (Gerät ↔ Google)</li>
+                    <li><strong>Nicht:</strong> kein Upload auf Betreiber-Server, keine Werbe-Tracker</li>
+                </ul>
+                <p class="mt-2">
+                    Details:
+                    <a href="privacy.html" class="text-blue-600 hover:underline">Datenschutzerklärung</a>
+                    ·
+                    <a href="terms.html" class="text-blue-600 hover:underline">Nutzungsbedingungen</a>
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Abrechnungsprüfung</h2>
+                <p>
+                    Vergleicht den <strong>Verdienstnachweis</strong> (Zeilen / Lohnarten) mit den
+                    <strong>importierten Diensten</strong> und hinterlegten Tarifwerten im Pack
+                    (z. B. AVR-Orientierung). Ergebnis ist eine Hilfestellung — <strong>keine</strong>
+                    offizielle Gehaltsauskunft und keine Gewähr für Vollständigkeit.
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Aktuelle Mappings (St. Elisabeth)</h2>
+                <p class="mb-2 text-xs text-gray-500">
+                    Nur diese beiden sind wirklich validiert und im Alltag genutzt.
+                    Andere Einträge in der App sind Platzhalter ohne brauchbares Schicht-Mapping.
+                </p>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li><strong>Pflege · OP · ATA</strong> — live geprüft</li>
+                    <li><strong>Ärzte · OP · Anästhesie</strong> — live geprüft</li>
+                </ul>
+                <p class="mt-2 text-xs text-gray-500">
+                    Noch <strong>kein</strong> valides Mapping für: Service, OTA, Stationen, Stationsleitung, Wundmanagement, Chirurgie, …
+                    Interesse an einem eigenen Bereich? Melde dich — braucht Mitwirkung (PDF-Beispiele, Kürzel).
+                </p>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Experimentell — bekannte Grenzen</h2>
+                <ul class="list-disc ml-5 space-y-2">
+                    <li>
+                        <strong>Netz / Timeouts:</strong> Bei langsamem Internet kann die LOGA-Automation abbrechen
+                        (Seiten laden nicht rechtzeitig) — Abruf dann erneut starten.
+                    </li>
+                    <li>
+                        <strong>OCR / Foto:</strong> Abhängigkeit von Bildqualität, Zuschnitt und Beleuchtung.
+                        Unscharfe oder schräge Fotos → falsche oder fehlende Schichten.
+                    </li>
+                    <li>
+                        <strong>PDF:</strong> Korrektheit hängt am Mapping. Für mich (getestetes Pack) stimmen die Daten
+                        weitgehend — Ausnahmen siehe unten.
+                    </li>
+                    <li>
+                        <strong>FK9 / F3:</strong> Wenn gleiche Zeiten und gleiches Kürzel-Muster kollidieren,
+                        kann ein falsches Kürzel eingetragen werden (bekanntes Mapping-Risiko).
+                        Bitte im Kalender gegenprüfen.
+                    </li>
+                    <li>
+                        <strong>Zeitänderung → falsches Kürzel (PDF-Fetch):</strong>
+                        Späterer Abruf zeigt oft die <em>Ist</em>-Zeiten (z. B. früher gegangen).
+                        Die App mappt dann auf das passende Zeitfenster im Pack — aus geplantem
+                        <strong>F</strong> wird z. B. <strong>FK102</strong>, obwohl der Dienst planmäßig F war.
+                        Geplante Korrektur: geplantes Kürzel aus der <strong>Monatsmatrix</strong> halten,
+                        Ist-Zeiten aus dem Zeitprotokoll — noch offen (Roadmap).
+                    </li>
+                    <li>
+                        Portal-Updates bei LOGA3 können den Abruf vorübergehend brechen, bis die Automation angepasst ist.
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Zugang &amp; Plattformen</h2>
+                <ul class="list-disc ml-5 space-y-1">
+                    <li><strong>Android:</strong> ja — geschlossener Play-Test nach E-Mail-Freischaltung</li>
+                    <li><strong>iOS:</strong> keine native App; Web + .ics</li>
+                    <li><strong>Desktop LOGA:</strong> <a href="loga3.html" class="text-blue-600 hover:underline">Downloads</a></li>
+                </ul>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-2">Noch Fragen / Feedback?</h2>
+                <p class="mb-2">
+                    Bugs, Wunsch nach neuem Mapping oder Interesse:
+                    im Haus Patrick Böhme (Anästhesie), sonst
+                    <a href="mailto:support@fr4iser.com" class="text-blue-600 hover:underline">support@fr4iser.com</a>
+                </p>
+                <p class="text-xs text-gray-500">
+                    Privates Projekt, keine offizielle Verbindung zum Krankenhaus.
+                    Du bleibst selbst verantwortlich für die Prüfung deiner Dienste und Abrechnung.
+                </p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const body = document.body;
+            function setTheme(theme) {
+                body.classList.remove('theme-light', 'theme-dark', 'theme-sepia');
+                body.classList.add(theme);
+                localStorage.setItem('theme', theme);
+            }
+            setTheme(localStorage.getItem('theme') || 'theme-light');
+            document.getElementById('themeLightBtn')?.addEventListener('click', () => setTheme('theme-light'));
+            document.getElementById('themeDarkBtn')?.addEventListener('click', () => setTheme('theme-dark'));
+            document.getElementById('themeSepiaBtn')?.addEventListener('click', () => setTheme('theme-sepia'));
+        });
+    </script>
+</body>
+</html>
