@@ -339,6 +339,11 @@ async function refreshPreview() {
         writeJsonStore('parsedEntries', parsed.entries);
         saveMonthSummaries(extractMonthSummariesFromText(lastRawText));
         await renderPreview(parsed.entries, currentMapping, preset);
+        // Person-Pick / Mapping-Wechsel laufen nur über refreshPreview —
+        // ohne wireExportButtons bleiben ICS/CSV dauerhaft disabled.
+        if (parsed.entries?.length) {
+            wireExportButtons();
+        }
     } catch (e) {
         console.warn('refreshPreview', e);
     }
