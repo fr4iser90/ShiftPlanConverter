@@ -2,7 +2,7 @@
  * icsExport.js
  * Generates and downloads/shares an .ics (iCalendar) file from parsed shift entries.
  * Compatible with Nextcloud, Outlook, Apple Calendar, Thunderbird, etc.
- * On iOS: prefers Web Share (Share Sheet → Kalender), with blob fallback.
+ * On iOS: opens blob in Safari (Calendar „Hinzufügen“). Android: Web Share.
  */
 
 import { buildEventDescription } from './eventDescription.js';
@@ -134,7 +134,8 @@ export function buildIcsContent(entries, { richDetails = isRichEventDetailsEnabl
 }
 
 /**
- * iOS: Share Sheet (Kalender / Dateien). Desktop: classical download.
+ * iOS/iPadOS: open blob URL → Safari Calendar invite UI („Hinzufügen“).
+ * Android: Web Share when available. Desktop: classical download.
  * Blob URL is kept alive longer — Safari often needs that.
  *
  * @param {Blob} blob
@@ -156,8 +157,20 @@ export async function deliverIcsFile(blob, filename, env = globalThis) {
         if (typeof timer.unref === 'function') timer.unref();
     };
 
-    const file = new File([blob], filename, { type: 'text/calendar' });
+    // Apple: open ICS in Safari — Share Sheet only saves to Files and skips „Hinzufügen“.
+    if (isAppleTouchDevice(nav)) {
+        const url = UrlApi.createObjectURL(blob);
+        const opened = win.open(url, '_blank');
+        if (!opened) {
+            win.location.assign(url);
+            scheduleRevoke(url);
+            return { method: 'ios-location', url };
+        }
+        scheduleRevoke(url);
+        return { method: 'ios-window-open', url };
+    }
 
+    const file = new File([blob], filename, { type: 'text/calendar' });
     const canFileShare =
         typeof nav.canShare === 'function' &&
         (() => {
@@ -168,11 +181,8 @@ export async function deliverIcsFile(blob, filename, env = globalThis) {
             }
         })();
 
-    const isMobileShareTarget =
-        isAppleTouchDevice(nav) || /Android/i.test(nav.userAgent || '');
-
-    // Prefer Share on iPhone/iPad (and other mobiles that support file share)
-    if (canFileShare && isMobileShareTarget) {
+    // Android (and other non-Apple mobiles): Share Sheet is the useful path
+    if (canFileShare && /Android/i.test(nav.userAgent || '')) {
         try {
             await nav.share({
                 files: [file],
@@ -182,25 +192,11 @@ export async function deliverIcsFile(blob, filename, env = globalThis) {
             return { method: 'share' };
         } catch (err) {
             if (err && err.name === 'AbortError') return { method: 'share-aborted' };
-            // fall through to download / open
+            // fall through to download
         }
     }
 
     const url = UrlApi.createObjectURL(blob);
-
-    if (isAppleTouchDevice(nav)) {
-        // download= is unreliable; opening the blob triggers Calendar invite UI
-        const opened = win.open(url, '_blank');
-        if (!opened) {
-            // Popup blocked → same-tab navigation as last resort
-            win.location.assign(url);
-            scheduleRevoke(url);
-            return { method: 'ios-location', url };
-        }
-        scheduleRevoke(url);
-        return { method: 'ios-window-open', url };
-    }
-
     const a = doc.createElement('a');
     a.href = url;
     a.download = filename;

@@ -203,20 +203,20 @@ describe('deliverIcsFile (platform emulation)', () => {
         assert.equal(env._spy.opens.length, 0);
     });
 
-    it('iOS Safari with Web Share: prefers navigator.share(files)', async () => {
+    it('iOS Safari: opens blob URL even when Web Share is available (invite / Hinzufügen)', async () => {
         const env = makeEnv({
             ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
             canShare: true,
+            openResult: { name: 'fake-window' },
         });
         const blob = new Blob(['BEGIN:VCALENDAR'], { type: 'text/calendar' });
         const result = await deliverIcsFile(blob, 'dienstplan.ics', env);
 
-        assert.equal(result.method, 'share');
-        assert.equal(env._spy.shares.length, 1);
-        assert.equal(env._spy.shares[0].files[0].name, 'dienstplan.ics');
-        assert.equal(env._spy.shares[0].files[0].type, 'text/calendar');
+        assert.equal(result.method, 'ios-window-open');
+        assert.equal(env._spy.opens.length, 1);
+        assert.equal(env._spy.opens[0].target, '_blank');
+        assert.equal(env._spy.shares.length, 0);
         assert.equal(env._spy.clicks.length, 0);
-        assert.equal(env._spy.opens.length, 0);
     });
 
     it('iOS without share: opens blob URL (Safari calendar invite path)', async () => {
@@ -237,7 +237,7 @@ describe('deliverIcsFile (platform emulation)', () => {
     it('iOS popup blocked: falls back to location.assign', async () => {
         const env = makeEnv({
             ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
-            canShare: false,
+            canShare: true,
             openResult: null,
         });
         const blob = new Blob(['BEGIN:VCALENDAR'], { type: 'text/calendar' });
@@ -246,13 +246,29 @@ describe('deliverIcsFile (platform emulation)', () => {
         assert.equal(result.method, 'ios-location');
         assert.equal(env._spy.assigns.length, 1);
         assert.match(env._spy.assigns[0], /^blob:/);
+        assert.equal(env._spy.shares.length, 0);
     });
 
-    it('iOS share AbortError: stops without falling through', async () => {
+    it('Android with Web Share: prefers navigator.share(files)', async () => {
+        const env = makeEnv({
+            ua: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
+            canShare: true,
+        });
+        const blob = new Blob(['BEGIN:VCALENDAR'], { type: 'text/calendar' });
+        const result = await deliverIcsFile(blob, 'dienstplan.ics', env);
+
+        assert.equal(result.method, 'share');
+        assert.equal(env._spy.shares.length, 1);
+        assert.equal(env._spy.shares[0].files[0].name, 'dienstplan.ics');
+        assert.equal(env._spy.opens.length, 0);
+        assert.equal(env._spy.clicks.length, 0);
+    });
+
+    it('Android share AbortError: stops without falling through', async () => {
         const err = new Error('cancelled');
         err.name = 'AbortError';
         const env = makeEnv({
-            ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
+            ua: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36',
             canShare: true,
             shareImpl: async () => {
                 throw err;
@@ -264,22 +280,5 @@ describe('deliverIcsFile (platform emulation)', () => {
         assert.equal(result.method, 'share-aborted');
         assert.equal(env._spy.opens.length, 0);
         assert.equal(env._spy.clicks.length, 0);
-    });
-
-    it('iOS share failure: falls through to window.open', async () => {
-        const env = makeEnv({
-            ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)',
-            canShare: true,
-            shareImpl: async () => {
-                throw new Error('share failed');
-            },
-            openResult: { name: 'ok' },
-        });
-        const blob = new Blob(['BEGIN:VCALENDAR'], { type: 'text/calendar' });
-        const result = await deliverIcsFile(blob, 'dienstplan.ics', env);
-
-        assert.equal(result.method, 'ios-window-open');
-        assert.equal(env._spy.shares.length, 1);
-        assert.equal(env._spy.opens.length, 1);
     });
 });
